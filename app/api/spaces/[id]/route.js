@@ -42,6 +42,7 @@ export async function GET(request, { params }) {
             space: {
                 id: space._id.toString(),
                 name: space.name,
+                invite_code: space.invite_code,
                 created_by: space.created_by.toString()
             },
             members

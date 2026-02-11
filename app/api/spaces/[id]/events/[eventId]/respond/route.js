@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification } from '@/models';
+import { pushToUser } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -11,11 +13,9 @@ async function authenticate(request) {
     return User.findOne({ token });
 }
 
-import { pushToUser } from '@/lib/sse';
-
 export async function POST(request, { params }) {
     try {
-        const { eventId } = params; // params.eventId matches folder
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,21 +25,18 @@ export async function POST(request, { params }) {
         const event = await Event.findById(eventId);
         if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
-        // Find participant in subdoc array
         const pIndex = event.participants.findIndex(p => p.userId === user._id.toString());
 
         if (pIndex === -1) {
             return NextResponse.json({ error: 'Not a participant' }, { status: 403 });
         }
 
-        // Update
         event.participants[pIndex].status = status;
         event.participants[pIndex].comment = comment || '';
         event.participants[pIndex].updatedAt = new Date();
 
         await event.save();
 
-        // Notify Creator
         if (event.user_id.toString() !== user._id.toString()) {
             const notification = await Notification.create({
                 user_id: event.user_id,
@@ -50,7 +47,6 @@ export async function POST(request, { params }) {
                 from_user_id: user._id,
                 related_id: event._id.toString()
             });
-            // Push notification via SSE
             pushToUser(event.user_id.toString(), 'notification', {
                 id: notification._id,
                 title: notification.title,

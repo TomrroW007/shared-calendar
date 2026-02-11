@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification, SpaceMember } from '@/models';
 import { pushToSpaceMembers } from '@/lib/sse';
@@ -13,10 +14,8 @@ async function authenticate(request) {
 }
 
 export async function GET(request, { params }) {
-    // Get single event details
     try {
-        const { eventId } = params;
-
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,14 +23,13 @@ export async function GET(request, { params }) {
         const event = await Event.findById(eventId).populate('user_id', 'nickname avatar_color').lean();
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        // Get Participants details
         const userIds = event.participants?.map(p => p.userId) || [];
         const users = await User.find({ _id: { $in: userIds } }).lean();
         const userMap = {};
         users.forEach(u => userMap[u._id.toString()] = u);
 
         const enrichedDetails = event.participants?.map(p => ({
-            id: p.userId, // userId in DB is string (ObjectId string)
+            id: p.userId,
             status: p.status,
             comment: p.comment,
             nickname: userMap[p.userId]?.nickname || 'Unknown',
@@ -59,9 +57,8 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-    // Update Event
     try {
-        const { eventId } = params;
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
         const event = await Event.findById(eventId);
@@ -72,25 +69,18 @@ export async function PUT(request, { params }) {
         }
 
         const body = await request.json();
-        // Update fields
         event.start_date = body.start_date || event.start_date;
         event.end_date = body.end_date || event.end_date;
         event.status = body.status || event.status;
         event.note = body.note !== undefined ? body.note : event.note;
         event.visibility = body.visibility || event.visibility;
 
-        // Sync participants? Re-invite logic is complex. For now assume minimal update.
-        // If body.participants provided, update list.
         if (body.participants) {
-            // Logic to merge or replace? 
-            // Replacing logic:
-            // But preserving status?
-            // "Advanced sync": Keep existing statuses, add new ones as pending, remove missing.
             const existingMap = {};
             event.participants.forEach(p => existingMap[p.userId] = p);
 
             const newParticipants = body.participants.map(uid => {
-                if (existingMap[uid]) return existingMap[uid]; // Keep status
+                if (existingMap[uid]) return existingMap[uid];
                 return { userId: uid, status: 'pending', comment: '' };
             });
             event.participants = newParticipants;
@@ -98,7 +88,6 @@ export async function PUT(request, { params }) {
 
         await event.save();
 
-        // Push event_updated to all space members (except editor)
         await pushToSpaceMembers(event.space_id, 'event_updated', {
             eventId: eventId,
         }, user._id.toString());
@@ -111,7 +100,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
     try {
-        const { eventId } = params;
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
 
@@ -122,9 +111,8 @@ export async function DELETE(request, { params }) {
         }
 
         await Event.deleteOne({ _id: eventId });
-        await Notification.deleteMany({ related_id: eventId }); // Cleanup notifications
+        await Notification.deleteMany({ related_id: eventId });
 
-        // Push event_deleted to all space members (except deleter)
         await pushToSpaceMembers(event.space_id, 'event_deleted', {
             eventId: eventId,
         }, user._id.toString());

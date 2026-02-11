@@ -12,6 +12,8 @@ export const viewport = {
     userScalable: false,
 };
 
+import PushManager from '@/components/PushManager';
+
 export default function RootLayout({ children }) {
     return (
         <html lang="zh-CN">
@@ -20,10 +22,14 @@ export default function RootLayout({ children }) {
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
                 <meta name="theme-color" content="#0f0f1a" />
+                <meta name="manifest" content="/manifest.json" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
             </head>
-            <body>{children}</body>
+            <body>
+                {children}
+                <PushManager />
+            </body>
         </html>
     );
 }

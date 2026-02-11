@@ -10,9 +10,11 @@
   "dependencies": {
     "mongoose": "^9.2.0",
     "next": "^15.1.0",
+    "node-ical": "^0.25.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "eslint": "^9.0.0",

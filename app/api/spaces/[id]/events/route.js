@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/mongodb';
 import { Event, SpaceMember, User, Notification, Space } from '@/models';
 import { pushToSpaceMembers, pushToUser } from '@/lib/sse';
+import { sendPushToSpaceMembers, sendPushNotification } from '@/lib/push';
+import { fetchAndParseICS } from '@/lib/ics';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -14,7 +17,7 @@ async function authenticate(request) {
 
 export async function GET(request, { params }) {
     try {
-        const { id: spaceId } = params;
+        const { id: spaceId } = await params;
         const url = new URL(request.url);
         const monthStr = url.searchParams.get('month'); // YYYY-MM
 
@@ -27,36 +30,9 @@ export async function GET(request, { params }) {
 
         let query = { space_id: spaceId };
         if (monthStr) {
-            // Filter by month
-            // start_date, end_date are Strings YYYY-MM-DD
-            // e.g. month=2026-02
-            // We want events where range overlaps with month
-            const startOfMonth = `${monthStr}-01`;
-            // simplistic filter: start_date starts with month OR end_date starts with ...
-            // or just fetch all and filter in memory if volume low? 
-            // Better: Regex or $gte/$lte on strings (works for ISO format)
-
-            // Actually, simplest is regex on start_date for now, or just return all and let frontend filter?
-            // Let's rely on standard string comparison.
-            // Events starting in this month OR ending in this month OR spanning across.
-            // Event start <= MonthEnd AND Event end >= MonthStart
-            const nextMonthDate = new Date(monthStr + '-01');
-            nextMonthDate.setMonth(nextMonthDate.getMonth() + 1);
-            const endOfMonth = nextMonthDate.toISOString().slice(0, 10); // Approximation logic, but string comparison is easiest
-
-            // Optimized: find by space_id first, filter later? Or regex.
-            // Let's use Regex to find anything containing the month string in start or end
-            // query.$or = [
-            //    { start_date: { $regex: `^${monthStr}` } },
-            //    { end_date: { $regex: `^${monthStr}` } }
-            // ];
-            // This misses events that span efficiently.
-            // Let's just fetch all space events for MVP logic? No, too heavy.
-            // Let's use string comparison.
             query.$or = [
                 { start_date: { $regex: `^${monthStr}` } },
                 { end_date: { $regex: `^${monthStr}` } },
-                // Spanning events: start < month and end > month
                 { start_date: { $lt: `${monthStr}-01` }, end_date: { $gt: `${monthStr}-31` } }
             ];
         }
@@ -64,15 +40,6 @@ export async function GET(request, { params }) {
         const events = await Event.find(query).populate('user_id', 'nickname avatar_color').lean();
 
         // Enrich with participant details
-        // We need to fetch participant users manually or via populate if structure changed.
-        // Participants is array of { userId: String, ... }
-        // We need to resolve userId (which is likely ObjectId string) to User details.
-
-        // Let's fetch all relevant users cache?
-        // Or for each event, populate?
-        // Mongoose doesn't populate nested array of objects easily if userId is bare string/ObjectId.
-
-        // Strategy: Collect all unique participant userIds
         const userIds = new Set();
         events.forEach(e => {
             e.participants?.forEach(p => userIds.add(p.userId));
@@ -81,23 +48,63 @@ export async function GET(request, { params }) {
         const userMap = {};
         users.forEach(u => userMap[u._id.toString()] = u);
 
-        const enrichedEvents = events.map(e => {
-            // Basic visibility filter logic (same as before)
-            // If private and not mine, hide details
-            const isMine = e.user_id._id.toString() === user._id.toString();
-            const isPrivate = e.visibility === 'private' && !isMine;
-            const isStatusOnly = e.visibility === 'status_only' && !isMine;
+        const space = await Space.findById(spaceId);
+        const spacePrivacy = space?.settings?.default_privacy || 'busy_only'; // Default to strict if missing
+        const canViewDetails = ['owner', 'admin'].includes(member.role);
+
+        // Fetch External ICS Events
+        const externalEventsPromises = (member.role === 'guest') ? [] :
+            (user.ics_urls || []).map(async (entry) => {
+                try {
+                    const evs = await fetchAndParseICS(entry.url);
+                    // Add color/name to events?
+                    return evs.map(e => ({ ...e, color: entry.color, sourceName: entry.name }));
+                } catch (e) {
+                    console.error('ICS fetch error', e);
+                    return [];
+                }
+            });
+
+        const externalResults = await Promise.all(externalEventsPromises);
+        const externalEvents = externalResults.flat();
+
+        // Merge DB events and External events
+        const allEvents = [...events, ...externalEvents];
+
+        const enrichedEvents = allEvents.map(e => {
+            const uId = e.user_id && e.user_id._id ? e.user_id._id.toString() : (e.user_id ? e.user_id.toString() : 'external');
+            const isMine = uId === user._id.toString();
+
+            let hideDetails = false;
+            if (e.source === 'external') {
+                hideDetails = true; // Always busy only for external? Or depends? Assume busy only for MVP.
+            } else {
+                if (e.visibility === 'private' && !isMine) {
+                    hideDetails = true;
+                } else if (spacePrivacy === 'busy_only' && !isMine && !canViewDetails) {
+                    hideDetails = true;
+                }
+            }
+
+            const effectiveVisibility = (e.visibility === 'status_only' || hideDetails) ? 'status_only' : (e.visibility || 'public');
+
+            let note = e.note;
+            if (effectiveVisibility === 'status_only') {
+                note = (e.status === 'available' ? 'Available' : 'Busy');
+            } else if (effectiveVisibility === 'private') {
+                note = 'Private';
+            }
 
             let result = {
-                id: e._id.toString(),
-                user_id: e.user_id._id.toString(),
-                nickname: e.user_id.nickname,
-                avatar_color: e.user_id.avatar_color,
+                id: e._id ? e._id.toString() : `ext-${e.original_data ? e.original_data.uid : Math.random()}`,
+                user_id: uId,
+                nickname: e.nickname || e.user_id?.nickname,
+                avatar_color: e.avatar_color || e.user_id?.avatar_color,
                 start_date: e.start_date,
                 end_date: e.end_date,
-                status: e.status,
-                visibility: e.visibility,
-                note: (isPrivate || isStatusOnly) ? (isStatusOnly ? 'Busy' : 'Private') : e.note,
+                status: e.status || 'busy',
+                visibility: effectiveVisibility,
+                note: note,
                 participants: e.participants?.map(p => p.userId) || [],
                 participant_details: e.participants?.map(p => ({
                     id: p.userId,
@@ -105,7 +112,9 @@ export async function GET(request, { params }) {
                     comment: p.comment,
                     nickname: userMap[p.userId]?.nickname || 'Unknown',
                     avatar_color: userMap[p.userId]?.avatar_color || '#ccc'
-                })) || []
+                })) || [],
+                source: e.source || 'internal',
+                color: e.color // implementation specific
             };
             return result;
         });
@@ -120,12 +129,18 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
     try {
-        const { id: spaceId } = params;
+        const { id: spaceId } = await params;
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        const member = await SpaceMember.findOne({ space_id: spaceId, user_id: user._id });
+        if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+        if (['viewer', 'guest'].includes(member.role)) {
+            return NextResponse.json({ error: 'Permission denied: Viewers cannot create events' }, { status: 403 });
+        }
+
         const body = await request.json();
-        // Validation...
 
         const event = await Event.create({
             space_id: spaceId,
@@ -137,13 +152,12 @@ export async function POST(request, { params }) {
             visibility: body.visibility,
             participants: body.participants?.map(uid => ({
                 userId: uid,
-                status: 'pending' // Default
+                status: uid === user._id.toString() ? 'accepted' : 'pending'
             })) || []
         });
 
         // Notifications
         if (body.participants && body.participants.length > 0) {
-            const space = await Space.findById(spaceId);
             const notifications = body.participants
                 .filter(uid => uid !== user._id.toString())
                 .map(uid => ({
@@ -167,6 +181,12 @@ export async function POST(request, { params }) {
                         type: n.type,
                         created_at: n.created_at,
                     });
+                    // WebPush
+                    sendPushNotification(n.user_id.toString(), {
+                        title: n.title,
+                        body: n.body,
+                        url: `/space/${spaceId}/event/${event._id}`
+                    });
                 });
             }
         }
@@ -174,6 +194,15 @@ export async function POST(request, { params }) {
         // Push event_created to all space members (except creator)
         await pushToSpaceMembers(spaceId, 'event_created', {
             eventId: event._id.toString(),
+            title: event.note || 'New Event',
+            created_by: user.nickname
+        }, user._id.toString());
+
+        // WebPush for General Event Creation
+        await sendPushToSpaceMembers(spaceId, {
+            title: '📅 New Event',
+            body: `${user.nickname} created: ${event.note || 'Untitled'}`,
+            url: `/space/${spaceId}/event/${event._id}`
         }, user._id.toString());
 
         return NextResponse.json({ success: true, event: { id: event._id.toString() } });

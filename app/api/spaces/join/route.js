@@ -41,7 +41,7 @@ export async function POST(request) {
         await SpaceMember.create({
             space_id: space._id,
             user_id: user._id,
-            role: 'member',
+            role: 'editor',
             joined_at: new Date()
         });
 
