@@ -13,11 +13,7 @@ async function authenticate(request) {
 
 export async function GET(request, { params }) {
     try {
-        // Await params in Next.js 15+ (if applicable, but params is usually sync in 14-)
-        // Actually in Next 15 params is promise. But here we might be on 14. 
-        // User's project might be 15. Let's assume standard behavior.
-        // Actually, just accessing params.id is safe in most versions unless strictly typed.
-        const { id } = params;
+        const { id } = await params;
 
         await dbConnect();
         const user = await authenticate(request);
@@ -55,7 +51,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
     // Join space
     try {
-        const { id } = params;
+        const { id } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
