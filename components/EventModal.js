@@ -79,6 +79,8 @@ export default function EventModal({ date, event, members, currentUser, onClose,
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        setIsEditing(!event?.id);
+
         if (event) {
             setStartDate(event.start_date);
             setEndDate(event.end_date);
@@ -106,6 +108,9 @@ export default function EventModal({ date, event, members, currentUser, onClose,
             }
         }
     }, [event, isParticipant, myParticipantInfo, members]);
+
+    const displayStartDate = event?.start_date || startDate;
+    const displayEndDate = event?.end_date || endDate;
 
     const buildParticipants = () => {
         if (participantMode === 'all') return members.map(m => m.id);
@@ -245,12 +250,12 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                             </button>
                         </div>
                     </form>
-                ) : (
+                ) : event ? (
                     // VIEW MODE (Read Only + RSVP)
                     <div>
                         <div style={{ marginBottom: '20px' }}>
                             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                                📅 {event.start_date} {event.start_date !== event.end_date ? `~ ${event.end_date}` : ''}
+                                📅 {displayStartDate} {displayStartDate !== displayEndDate ? `~ ${displayEndDate}` : ''}
                             </div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '8px' }}>
                                 {event.note || '无主题'}
@@ -317,6 +322,8 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                             </div>
                         </div>
                     </div>
+                ) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>活动数据加载中...</div>
                 )}
             </div>
         </div>
