@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export default function NotificationBell({ onItemClick }) {
     const [notifications, setNotifications] = useState([]);
@@ -22,23 +22,33 @@ export default function NotificationBell({ onItemClick }) {
 
     useEffect(() => {
         fetchNotifications();
-        // Poll every 5s for notification count (faster updates)
-        const interval = setInterval(fetchNotifications, 5000);
+        // No more polling — SSE-driven via window.__refreshNotifications
 
         // Auto-refresh when window gains focus
         const onFocus = () => fetchNotifications();
         window.addEventListener('focus', onFocus);
 
         return () => {
-            clearInterval(interval);
             window.removeEventListener('focus', onFocus);
         };
     }, [fetchNotifications]);
 
-    // Expose refresh for parent to call
+    // Expose refresh for parent to call + track pulse
+    const [isPulsing, setIsPulsing] = useState(false);
+    const pulseTimer = useRef(null);
+
     useEffect(() => {
-        window.__refreshNotifications = fetchNotifications;
-        return () => { delete window.__refreshNotifications; };
+        window.__refreshNotifications = () => {
+            fetchNotifications();
+            // Trigger pulse animation
+            setIsPulsing(true);
+            if (pulseTimer.current) clearTimeout(pulseTimer.current);
+            pulseTimer.current = setTimeout(() => setIsPulsing(false), 1500);
+        };
+        return () => {
+            delete window.__refreshNotifications;
+            if (pulseTimer.current) clearTimeout(pulseTimer.current);
+        };
     }, [fetchNotifications]);
 
     const markAllRead = async () => {
@@ -98,7 +108,7 @@ export default function NotificationBell({ onItemClick }) {
     return (
         <div style={{ position: 'relative' }}>
             <button
-                className="back-btn"
+                className={`back-btn${isPulsing ? ' notif-bell-pulse' : ''}`}
                 style={{ fontSize: '1.1rem', position: 'relative' }}
                 onClick={() => setShowPanel(!showPanel)}
             >

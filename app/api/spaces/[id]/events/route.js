@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Event, SpaceMember, User, Notification, Space } from '@/models';
+import { pushToSpaceMembers, pushToUser } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -156,9 +157,24 @@ export async function POST(request, { params }) {
                 }));
 
             if (notifications.length > 0) {
-                await Notification.insertMany(notifications);
+                const inserted = await Notification.insertMany(notifications);
+                // Push notification via SSE to each participant
+                inserted.forEach(n => {
+                    pushToUser(n.user_id.toString(), 'notification', {
+                        id: n._id,
+                        title: n.title,
+                        body: n.body,
+                        type: n.type,
+                        created_at: n.created_at,
+                    });
+                });
             }
         }
+
+        // Push event_created to all space members (except creator)
+        await pushToSpaceMembers(spaceId, 'event_created', {
+            eventId: event._id.toString(),
+        }, user._id.toString());
 
         return NextResponse.json({ success: true, event: { id: event._id.toString() } });
     } catch (error) {

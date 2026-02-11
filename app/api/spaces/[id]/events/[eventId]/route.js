@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification, SpaceMember } from '@/models';
+import { pushToSpaceMembers } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -96,6 +97,12 @@ export async function PUT(request, { params }) {
         }
 
         await event.save();
+
+        // Push event_updated to all space members (except editor)
+        await pushToSpaceMembers(event.space_id, 'event_updated', {
+            eventId: eventId,
+        }, user._id.toString());
+
         return NextResponse.json({ success: true, event });
     } catch (error) {
         return NextResponse.json({ error: 'Update failed' }, { status: 500 });
@@ -116,6 +123,11 @@ export async function DELETE(request, { params }) {
 
         await Event.deleteOne({ _id: eventId });
         await Notification.deleteMany({ related_id: eventId }); // Cleanup notifications
+
+        // Push event_deleted to all space members (except deleter)
+        await pushToSpaceMembers(event.space_id, 'event_deleted', {
+            eventId: eventId,
+        }, user._id.toString());
 
         return NextResponse.json({ success: true });
     } catch (error) {

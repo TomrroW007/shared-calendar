@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Proposal, SpaceMember, User, Notification, Event } from '@/models';
+import { pushToSpaceMembers, pushToUser } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -79,7 +80,25 @@ export async function PUT(request, { params }) {
                 from_user_id: user._id,
                 related_id: event._id.toString()
             }));
-            await Notification.insertMany(notifications);
+            const inserted = await Notification.insertMany(notifications);
+
+            // Push notification via SSE to each member
+            inserted.forEach(n => {
+                pushToUser(n.user_id.toString(), 'notification', {
+                    id: n._id,
+                    title: n.title,
+                    body: n.body,
+                    type: n.type,
+                    created_at: n.created_at,
+                });
+            });
+
+            // Push proposal_confirmed to all space members
+            await pushToSpaceMembers(proposal.space_id, 'proposal_confirmed', {
+                proposalId,
+                title: proposal.title,
+                confirmed_date: body.date,
+            });
 
             return NextResponse.json({ success: true, eventId: event._id.toString() });
         }
@@ -102,8 +121,14 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
+        const spaceId = proposal.space_id;
         await Proposal.deleteOne({ _id: proposalId });
         await Notification.deleteMany({ related_id: proposalId });
+
+        // Push proposal_cancelled to all space members
+        await pushToSpaceMembers(spaceId, 'proposal_cancelled', {
+            proposalId,
+        }, user._id.toString());
 
         return NextResponse.json({ success: true });
     } catch (error) {

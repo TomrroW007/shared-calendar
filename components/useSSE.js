@@ -35,6 +35,14 @@ export function useSSE(onEvent) {
             try { onEvent('event_created', JSON.parse(e.data)); } catch { }
         });
 
+        es.addEventListener('event_updated', (e) => {
+            try { onEvent('event_updated', JSON.parse(e.data)); } catch { }
+        });
+
+        es.addEventListener('event_deleted', (e) => {
+            try { onEvent('event_deleted', JSON.parse(e.data)); } catch { }
+        });
+
         es.addEventListener('proposal_created', (e) => {
             try {
                 const data = JSON.parse(e.data);

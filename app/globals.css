@@ -495,6 +495,20 @@ textarea.input {
   }
 }
 
+/* ===== Notification Bell Pulse ===== */
+@keyframes notif-pulse {
+  0% { transform: scale(1); box-shadow: none; }
+  25% { transform: scale(1.15); box-shadow: 0 0 12px var(--accent-glow); }
+  50% { transform: scale(1.05); box-shadow: 0 0 8px var(--accent-glow); }
+  75% { transform: scale(1.1); box-shadow: 0 0 10px var(--accent-glow); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+
+.notif-bell-pulse {
+  animation: notif-pulse 0.8s ease-in-out;
+  border-color: var(--accent-solid) !important;
+}
+
 /* ===== Calendar Styles ===== */
 .calendar {
   margin: 8px 0;

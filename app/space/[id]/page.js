@@ -119,7 +119,7 @@ export default function SpacePage() {
             // Refresh notification bell
             window.__refreshNotifications?.();
         }
-        if (type === 'event_created' || type === 'event_updated') {
+        if (type === 'event_created' || type === 'event_updated' || type === 'event_deleted') {
             fetchEvents();
         }
         if (type === 'proposal_created' || type === 'proposal_confirmed' || type === 'proposal_voted' || type === 'proposal_cancelled') {
@@ -130,15 +130,15 @@ export default function SpacePage() {
 
     useSSE(handleSSEEvent);
 
-    const handlePrevMonth = () => {
+    const handlePrevMonth = useCallback(() => {
         if (month === 0) { setYear(year - 1); setMonth(11); }
         else setMonth(month - 1);
-    };
+    }, [month, year]);
 
-    const handleNextMonth = () => {
+    const handleNextMonth = useCallback(() => {
         if (month === 11) { setYear(year + 1); setMonth(0); }
         else setMonth(month + 1);
-    };
+    }, [month, year]);
 
     const handleDateClick = (dateStr) => {
         setSelectedDate(dateStr);
@@ -165,13 +165,36 @@ export default function SpacePage() {
                 if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
                 showToast('已更新');
             } else {
+                // Optimistic UI: immediately show the event on calendar
+                const tempId = `temp-${Date.now()}`;
+                const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const optimisticEvent = {
+                    id: tempId,
+                    user_id: currentUser?.id,
+                    nickname: savedUser.nickname || '我',
+                    avatar_color: savedUser.avatar_color || '#666',
+                    start_date: data.start_date,
+                    end_date: data.end_date || data.start_date,
+                    status: data.status,
+                    note: data.note,
+                    visibility: data.visibility,
+                    participants: data.participants || [],
+                    participant_details: [],
+                };
+                setEvents(prev => [...prev, optimisticEvent]);
+
                 const res = await fetch(`/api/spaces/${spaceId}/events`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify(data),
                 });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
-                showToast(data.mentions?.length > 0 ? '已标记并通知' : '已标记');
+                if (!res.ok) {
+                    // Rollback optimistic update
+                    setEvents(prev => prev.filter(e => e.id !== tempId));
+                    const err = await res.json();
+                    throw new Error(err.error);
+                }
+                showToast(data.participants?.length > 0 ? '已标记并通知' : '已标记');
             }
             setShowModal(false);
             fetchEvents();
@@ -181,14 +204,23 @@ export default function SpacePage() {
     };
 
     const handleDeleteEvent = async (eventId) => {
+        // Optimistic UI: immediately remove the event from state
+        const previousEvents = [...events];
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        setShowModal(false);
+
         try {
             const res = await fetch(`/api/spaces/${spaceId}/events/${eventId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${getToken()}` },
             });
-            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            if (!res.ok) {
+                // Rollback on failure
+                setEvents(previousEvents);
+                const err = await res.json();
+                throw new Error(err.error);
+            }
             showToast('已删除');
-            setShowModal(false);
             fetchEvents();
         } catch (err) {
             showToast(err.message || '删除失败');
@@ -254,6 +286,38 @@ export default function SpacePage() {
             setActiveTab('proposals');
         }
     };
+
+    // Keyboard shortcuts (must be before early return to follow React Hooks rules)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Ignore when typing in input/textarea
+            const tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
+            switch (e.key.toLowerCase()) {
+                case 't': {
+                    const now = new Date();
+                    setYear(now.getFullYear());
+                    setMonth(now.getMonth());
+                    break;
+                }
+                case 'j':
+                    handlePrevMonth();
+                    break;
+                case 'k':
+                    handleNextMonth();
+                    break;
+                case 'escape':
+                    if (showModal) {
+                        setShowModal(false);
+                        setEditingEvent(null);
+                    }
+                    break;
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showModal, handlePrevMonth, handleNextMonth]);
 
     if (loading) {
         return (
