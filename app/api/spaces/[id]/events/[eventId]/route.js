@@ -4,6 +4,22 @@ import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification, SpaceMember } from '@/models';
 import { pushToSpaceMembers } from '@/lib/sse';
 
+function serializeEvent(eventDoc, owner) {
+    return {
+        id: eventDoc._id.toString(),
+        user_id: owner?._id?.toString() || eventDoc.user_id.toString(),
+        nickname: owner?.nickname,
+        avatar_color: owner?.avatar_color,
+        start_date: eventDoc.start_date,
+        end_date: eventDoc.end_date,
+        status: eventDoc.status,
+        note: eventDoc.note,
+        visibility: eventDoc.visibility,
+        participants: eventDoc.participants?.map((p) => p.userId?.toString() || p.userId) || [],
+        participant_details: []
+    };
+}
+
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return null;
@@ -61,6 +77,7 @@ export async function PUT(request, { params }) {
         const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const event = await Event.findById(eventId);
 
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -88,11 +105,14 @@ export async function PUT(request, { params }) {
 
         await event.save();
 
+        const serializedEvent = serializeEvent(event, user);
+
         await pushToSpaceMembers(event.space_id, 'event_updated', {
             eventId: eventId,
+            event: serializedEvent,
         }, user._id.toString());
 
-        return NextResponse.json({ success: true, event });
+        return NextResponse.json({ success: true, event: serializedEvent });
     } catch (error) {
         return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }

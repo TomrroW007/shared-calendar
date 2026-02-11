@@ -119,9 +119,34 @@ export default function SpacePage() {
             // Refresh notification bell
             window.__refreshNotifications?.();
         }
-        if (type === 'event_created' || type === 'event_updated' || type === 'event_deleted') {
-            fetchEvents();
+
+        if (type === 'event_created') {
+            if (data?.event) {
+                setEvents((prev) => {
+                    if (prev.some((e) => e.id === data.event.id)) return prev;
+                    return [...prev, data.event];
+                });
+            } else {
+                fetchEvents();
+            }
         }
+
+        if (type === 'event_updated') {
+            if (data?.event) {
+                setEvents((prev) => prev.map((e) => (e.id === data.event.id ? { ...e, ...data.event } : e)));
+            } else {
+                fetchEvents();
+            }
+        }
+
+        if (type === 'event_deleted') {
+            if (data?.eventId) {
+                setEvents((prev) => prev.filter((e) => e.id !== data.eventId));
+            } else {
+                fetchEvents();
+            }
+        }
+
         if (type === 'proposal_created' || type === 'proposal_confirmed' || type === 'proposal_voted' || type === 'proposal_cancelled') {
             // ProposalList will handle its own refresh, but let's trigger it
             window.__refreshProposals?.();
@@ -157,12 +182,25 @@ export default function SpacePage() {
         const token = getToken();
         try {
             if (editingEvent) {
+                const previousEvent = events.find((e) => e.id === editingEvent.id);
+                const optimisticUpdatedEvent = { ...editingEvent, ...data };
+                setEvents((prev) => prev.map((e) => (e.id === editingEvent.id ? optimisticUpdatedEvent : e)));
+
                 const res = await fetch(`/api/spaces/${spaceId}/events/${editingEvent.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                     body: JSON.stringify(data),
                 });
-                if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+                if (!res.ok) {
+                    const err = await res.json();
+                    setEvents((prev) => prev.map((e) => (e.id === editingEvent.id ? previousEvent : e)));
+                    throw new Error(err.error);
+                }
+
+                const result = await res.json();
+                if (result?.event) {
+                    setEvents((prev) => prev.map((e) => (e.id === result.event.id ? { ...e, ...result.event } : e)));
+                }
                 showToast('已更新');
             } else {
                 // Optimistic UI: immediately show the event on calendar
@@ -181,7 +219,7 @@ export default function SpacePage() {
                     participants: data.participants || [],
                     participant_details: [],
                 };
-                setEvents(prev => [...prev, optimisticEvent]);
+                setEvents((prev) => [...prev, optimisticEvent]);
 
                 const res = await fetch(`/api/spaces/${spaceId}/events`, {
                     method: 'POST',
@@ -190,14 +228,18 @@ export default function SpacePage() {
                 });
                 if (!res.ok) {
                     // Rollback optimistic update
-                    setEvents(prev => prev.filter(e => e.id !== tempId));
+                    setEvents((prev) => prev.filter((e) => e.id !== tempId));
                     const err = await res.json();
                     throw new Error(err.error);
+                }
+
+                const result = await res.json();
+                if (result?.event) {
+                    setEvents((prev) => prev.map((e) => (e.id === tempId ? result.event : e)));
                 }
                 showToast(data.participants?.length > 0 ? '已标记并通知' : '已标记');
             }
             setShowModal(false);
-            fetchEvents();
         } catch (err) {
             showToast(err.message || '操作失败');
         }
