@@ -6,6 +6,23 @@ import { pushToSpaceMembers, pushToUser } from '@/lib/sse';
 import { sendPushToSpaceMembers, sendPushNotification } from '@/lib/push';
 import { fetchAndParseICS } from '@/lib/ics';
 
+function serializeEvent(eventDoc, user) {
+    return {
+        id: eventDoc._id.toString(),
+        user_id: user._id.toString(),
+        nickname: user.nickname,
+        avatar_color: user.avatar_color,
+        start_date: eventDoc.start_date,
+        end_date: eventDoc.end_date,
+        status: eventDoc.status,
+        note: eventDoc.note,
+        visibility: eventDoc.visibility,
+        participants: eventDoc.participants?.map((p) => p.userId?.toString() || p.userId) || [],
+        participant_details: [],
+        source: 'internal'
+    };
+}
+
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return null;
@@ -156,6 +173,8 @@ export async function POST(request, { params }) {
             })) || []
         });
 
+        const serializedEvent = serializeEvent(event, user);
+
         // Notifications
         if (body.participants && body.participants.length > 0) {
             const notifications = body.participants
@@ -194,6 +213,7 @@ export async function POST(request, { params }) {
         // Push event_created to all space members (except creator)
         await pushToSpaceMembers(spaceId, 'event_created', {
             eventId: event._id.toString(),
+            event: serializedEvent,
             title: event.note || 'New Event',
             created_by: user.nickname
         }, user._id.toString());
@@ -205,7 +225,7 @@ export async function POST(request, { params }) {
             url: `/space/${spaceId}/event/${event._id}`
         }, user._id.toString());
 
-        return NextResponse.json({ success: true, event: { id: event._id.toString() } });
+        return NextResponse.json({ success: true, event: serializedEvent });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: 'Create failed' }, { status: 500 });
