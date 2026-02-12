@@ -13,6 +13,7 @@ export const viewport = {
 };
 
 import PushManager from '@/components/PushManager';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export default function RootLayout({ children }) {
     return (
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
             <body>
                 {children}
                 <PushManager />
+                <SpeedInsights />
             </body>
         </html>
     );
