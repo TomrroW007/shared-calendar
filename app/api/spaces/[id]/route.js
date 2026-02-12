@@ -39,6 +39,7 @@ export async function GET(request, { params }) {
                 id: space._id.toString(),
                 name: space.name,
                 invite_code: space.invite_code,
+                memo: space.memo || '',
                 created_by: space.created_by.toString()
             },
             members
@@ -94,13 +95,36 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Not a member' }, { status: 404 });
         }
 
-        // Optional: If the user was the last owner/admin, should we assign someone else?
-        // Or if the space is now empty, delete the space?
-        // For now, keep it simple.
-
         return NextResponse.json({ success: true, message: 'Left space successfully' });
     } catch (error) {
         console.error('Leave space error:', error);
         return NextResponse.json({ error: 'Leave failed' }, { status: 500 });
+    }
+}
+
+export async function PUT(request, { params }) {
+    try {
+        const { id } = await params;
+        await dbConnect();
+        const user = await authenticate(request);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // Check if user is owner or admin
+        const member = await SpaceMember.findOne({ space_id: id, user_id: user._id });
+        if (!member || !['owner', 'admin'].includes(member.role)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const { name, memo } = await request.json();
+        
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (memo !== undefined) updateData.memo = memo;
+
+        const space = await Space.findByIdAndUpdate(id, updateData, { new: true });
+
+        return NextResponse.json({ success: true, space });
+    } catch (error) {
+        return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
 }

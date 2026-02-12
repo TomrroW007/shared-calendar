@@ -46,8 +46,20 @@ export default function SpacePage() {
     const [showFreeOnly, setShowFreeOnly] = useState(false);
     const [toast, setToast] = useState('');
     const [activeTab, setActiveTab] = useState('calendar');
+    const [calendarMode, setCalendarMode] = useState('month'); // 'month' or 'agenda'
 
     const getToken = () => localStorage.getItem('token');
+
+    const getEmojiForNote = (note = '') => {
+        const text = note.toLowerCase();
+        if (text.includes('餐') || text.includes('饭') || text.includes('eat')) return '🍴 ';
+        if (text.includes('会') || text.includes('meet')) return '💻 ';
+        if (text.includes('玩') || text.includes('戏') || text.includes('game')) return '🎮 ';
+        if (text.includes('运') || text.includes('健身') || text.includes('sport')) return '🏃 ';
+        if (text.includes('旅') || text.includes('游') || text.includes('trip')) return '✈️ ';
+        if (text.includes('生') || text.includes('party')) return '🎂 ';
+        return '';
+    };
 
     const showToast = (msg) => {
         setToast(msg);
@@ -406,6 +418,14 @@ export default function SpacePage() {
 
                 {activeTab === 'calendar' ? (
                     <>
+                        {/* Space Memo / Announcement */}
+                        {space?.memo && (
+                            <div className="card space-memo" style={{ marginBottom: '16px', padding: '12px 16px', background: 'rgba(124, 58, 237, 0.05)', borderStyle: 'dashed' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--accent-solid)', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase' }}>📌 空间公告</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{space.memo}</div>
+                            </div>
+                        )}
+
                         {/* Members filter bar */}
                         <div className="members-bar">
                             <button
@@ -431,32 +451,57 @@ export default function SpacePage() {
                             ))}
                         </div>
 
-                        {/* Free days hint */}
-                        {freeDays.length > 0 && members.length > 1 && (
-                            <div className="free-all-bar">
-                                <span>🎉 本月有 {freeDays.length} 天大家都空</span>
-                                <button onClick={() => setShowFreeOnly(!showFreeOnly)}>
-                                    {showFreeOnly ? '显示全部' : '查看'}
-                                </button>
+                        {/* View Switcher */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                            <div className="select-group" style={{ gridTemplateColumns: 'repeat(2, 80px)', gap: '4px' }}>
+                                <button className={`select-option btn-sm ${calendarMode === 'month' ? 'active' : ''}`}
+                                    onClick={() => setCalendarMode('month')} style={{ padding: '4px' }}>月历</button>
+                                <button className={`select-option btn-sm ${calendarMode === 'agenda' ? 'active' : ''}`}
+                                    onClick={() => setCalendarMode('agenda')} style={{ padding: '4px' }}>议程</button>
                             </div>
-                        )}
+                        </div>
 
                         {/* Upcoming Events Dashboard */}
-                        <UpcomingEvents
-                            events={events}
-                            onEventClick={(evt) => { setEditingEvent(evt); setShowModal(true); }}
-                        />
+                        {calendarMode === 'month' && (
+                            <UpcomingEvents
+                                events={events}
+                                onEventClick={(evt) => { setEditingEvent(evt); setShowModal(true); }}
+                            />
+                        )}
 
-                        {/* Calendar */}
-                        <Calendar
-                            year={year}
-                            month={month}
-                            events={events}
-                            filterUserId={filterUserId}
-                            onDateClick={handleDateClick}
-                            onPrev={handlePrevMonth}
-                            onNext={handleNextMonth}
-                        />
+                        {/* Calendar / Agenda */}
+                        {calendarMode === 'month' ? (
+                            <Calendar
+                                year={year}
+                                month={month}
+                                events={events}
+                                filterUserId={filterUserId}
+                                onDateClick={handleDateClick}
+                                onPrev={handlePrevMonth}
+                                onNext={handleNextMonth}
+                            />
+                        ) : (
+                            <div className="agenda-view">
+                                {events.filter(e => !filterUserId || e.user_id === filterUserId)
+                                    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+                                    .map(evt => (
+                                        <div key={evt.id} className="event-item" onClick={() => { setEditingEvent(evt); setShowModal(true); }}>
+                                            <div style={{ minWidth: '50px', textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{evt.start_date.slice(5, 7)}月</div>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>{evt.start_date.slice(8)}</div>
+                                            </div>
+                                            <div style={{ width: '3px', alignSelf: 'stretch', background: STATUS_CLASS[evt.status] === 'status-busy' ? 'var(--status-busy)' : 'var(--status-available)', borderRadius: '2px' }} />
+                                            <div className="event-item-info">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span className="name">{getEmojiForNote(evt.note)}{evt.note || '无主题'}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{evt.nickname} · {STATUS_LABELS[evt.status]}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                {events.length === 0 && <div className="empty-state">本月暂无安排</div>}
+                            </div>
+                        )}
 
                         {/* Day detail */}
                         {selectedDate && !showModal && dateEvents.length > 0 && (

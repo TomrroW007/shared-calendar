@@ -33,6 +33,7 @@ export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 const SpaceSchema = new mongoose.Schema({
     name: { type: String, required: true },
     invite_code: { type: String },
+    memo: { type: String, default: '' }, // 空间公告/长期备忘
     settings: {
         default_privacy: { type: String, enum: ['busy_only', 'details'], default: 'busy_only' },
         allow_guest_vote: { type: Boolean, default: true }

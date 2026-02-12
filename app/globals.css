@@ -1152,3 +1152,63 @@ textarea.input {
   cursor: pointer;
 }
 
+
+/* ===== Dashboard & Today Cards ===== */
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.today-card {
+  background: var(--bg-hover);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
+}
+
+.today-card:hover {
+  border-color: var(--border-accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.today-card-note {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* ===== Agenda View ===== */
+.agenda-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.agenda-view .event-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.agenda-view .event-item:hover {
+  border-color: var(--border-accent);
+}
+

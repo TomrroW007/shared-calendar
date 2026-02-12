@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 export default function HomePage() {
     const [spaces, setSpaces] = useState([]);
+    const [todayEvents, setTodayEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
@@ -35,15 +36,21 @@ export default function HomePage() {
 
     const fetchSpaces = useCallback(async (token) => {
         try {
-            const res = await fetch('/api/spaces', {
-                headers: { Authorization: `Bearer ${token || getToken()}` },
-            });
-            if (res.status === 401) {
+            const currentToken = token || getToken();
+            const [spacesRes, todayRes] = await Promise.all([
+                fetch('/api/spaces', { headers: { Authorization: `Bearer ${currentToken}` } }),
+                fetch('/api/events/today', { headers: { Authorization: `Bearer ${currentToken}` } })
+            ]);
+            
+            if (spacesRes.status === 401) {
                 router.push('/login');
                 return;
             }
-            const data = await res.json();
-            setSpaces(data.spaces || []);
+            const spacesData = await spacesRes.json();
+            const todayData = await todayRes.json();
+            
+            setSpaces(spacesData.spaces || []);
+            setTodayEvents(todayData.events || []);
         } catch {
             // ignore
         } finally {
@@ -146,6 +153,27 @@ export default function HomePage() {
                     )}
                 </div>
 
+                {/* Dashboard: Today Overview */}
+                {todayEvents.length > 0 && (
+                    <div className="dashboard-section" style={{ marginBottom: '24px' }}>
+                        <h3 className="section-title">📅 今日概览</h3>
+                        <div className="today-grid">
+                            {todayEvents.map(e => (
+                                <Link key={e.id} href={`/space/${e.space_id}`}>
+                                    <div className="today-card">
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                            <span className="avatar avatar-sm" style={{ background: e.avatar_color }}>{e.nickname?.charAt(0)}</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{e.space_name}</span>
+                                        </div>
+                                        <div className="today-card-note">{e.note || (e.status === 'busy' ? '忙碌' : '休假')}</div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <h3 className="section-title">🏘️ 空间列表</h3>
                 {spaces.length === 0 ? (
                     <div className="empty-state">
                         <div className="emoji">🏝️</div>

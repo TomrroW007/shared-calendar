@@ -11,7 +11,9 @@ export default function SpaceSettingsPage() {
 
     const [space, setSpace] = useState(null);
     const [members, setMembers] = useState([]);
+    const [memo, setMemo] = useState('');
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [toast, setToast] = useState('');
     const [copied, setCopied] = useState(false);
@@ -41,10 +43,35 @@ export default function SpaceSettingsPage() {
                 if (data) {
                     setSpace(data.space);
                     setMembers(data.members);
+                    setMemo(data.space.memo || '');
                 }
             })
             .finally(() => setLoading(false));
     }, [spaceId, router]);
+
+    const handleUpdateSpace = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch(`/api/spaces/${spaceId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${getToken()}` 
+                },
+                body: JSON.stringify({ memo }),
+            });
+            if (res.ok) {
+                showToast('保存成功');
+            } else {
+                const data = await res.json();
+                throw new Error(data.error);
+            }
+        } catch (err) {
+            showToast(err.message || '保存失败');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const handleCopyCode = async () => {
         try {
@@ -87,6 +114,9 @@ export default function SpaceSettingsPage() {
         );
     }
 
+    const myMember = members.find(m => m.id === currentUser?.id);
+    const isAdmin = ['owner', 'admin'].includes(myMember?.role);
+
     return (
         <div className="page">
             <div className="container">
@@ -97,6 +127,29 @@ export default function SpaceSettingsPage() {
                         <p className="subtitle">{space?.name}</p>
                     </div>
                 </div>
+
+                {/* Memo Section */}
+                {isAdmin && (
+                    <div className="settings-section">
+                        <h3>空间公告 (Memo)</h3>
+                        <textarea 
+                            className="input" 
+                            placeholder="输入一些长期备忘或群组公告..."
+                            value={memo}
+                            onChange={(e) => setMemo(e.target.value)}
+                            rows={3}
+                            maxLength={500}
+                        />
+                        <button 
+                            className="btn btn-primary btn-full" 
+                            style={{ marginTop: '8px' }}
+                            onClick={handleUpdateSpace}
+                            disabled={saving}
+                        >
+                            {saving ? '保存中...' : '💾 保存公告'}
+                        </button>
+                    </div>
+                )}
 
                 {/* Invite Code Section */}
                 <div className="settings-section">
@@ -129,7 +182,7 @@ export default function SpaceSettingsPage() {
                                     {m.nickname}
                                     {m.id === currentUser?.id && ' (我)'}
                                 </span>
-                                {m.role === 'admin' && <span className="role">管理员</span>}
+                                {['owner', 'admin'].includes(m.role) && <span className="role">管理员</span>}
                             </div>
                         ))}
                     </div>
