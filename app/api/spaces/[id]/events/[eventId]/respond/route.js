@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification } from '@/models';
+import { pushToUser } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -11,11 +12,9 @@ async function authenticate(request) {
     return User.findOne({ token });
 }
 
-import { pushToUser } from '@/lib/sse';
-
 export async function POST(request, { params }) {
     try {
-        const { eventId } = params; // params.eventId matches folder
+        const { id: spaceId, eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

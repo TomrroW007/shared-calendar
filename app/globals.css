@@ -611,6 +611,37 @@ textarea.input {
   flex-shrink: 0;
 }
 
+/* ===== Holiday Labels ===== */
+.day-number.weekend {
+  color: #ef4444;
+}
+
+.calendar-day.is-holiday {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.calendar-day.is-workday {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.holiday-label {
+  font-size: 0.5rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 100%;
+  font-weight: 600;
+}
+
+.holiday-label.holiday {
+  color: #ef4444;
+}
+
+.holiday-label.workday {
+  color: #f59e0b;
+}
+
 /* ===== Member Filter ===== */
 .members-bar {
   display: flex;

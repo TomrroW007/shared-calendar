@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Proposal, SpaceMember, User, Notification, Event } from '@/models';
+import { pushToSpaceMembers } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -12,91 +13,106 @@ async function authenticate(request) {
 }
 
 export async function PUT(request, { params }) {
-    // Vote or Confirm
     try {
-        const { proposalId } = params;
+        const { id: spaceId, proposalId } = await params;
         const body = await request.json();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        await dbConnect();
         const proposal = await Proposal.findById(proposalId);
         if (!proposal) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        if (body.action === 'vote') {
-            // body.votes = ['2023-01-01', '2023-01-02'] (dates user voted for)
-            const userVotes = new Set(body.votes || []);
-
-            // Update each candidate
-            proposal.candidates.forEach(c => {
-                const voteSet = new Set(c.votes || []);
-                if (userVotes.has(c.date)) {
-                    voteSet.add(user._id.toString());
-                } else {
-                    voteSet.delete(user._id.toString());
-                }
-                c.votes = Array.from(voteSet);
-            });
-            await proposal.save();
-
-            // Notify Creator (if not self)
-            if (proposal.created_by.toString() !== user._id.toString()) {
-                // Check if already notified recently? For now, just notify.
-                // Or maybe just generic "vote update"
-            }
-            return NextResponse.json({ success: true });
-        }
-
         if (body.action === 'confirm') {
-            // Confirm a date
+            // Confirm a date — only creator can confirm
             if (proposal.created_by.toString() !== user._id.toString()) {
                 return NextResponse.json({ error: 'Only creator can confirm' }, { status: 403 });
             }
 
+            // Frontend sends confirmed_date
+            const confirmedDate = body.confirmed_date || body.date;
+            if (!confirmedDate) {
+                return NextResponse.json({ error: 'Missing date' }, { status: 400 });
+            }
+
             proposal.status = 'confirmed';
-            proposal.final_date = body.date;
+            proposal.final_date = confirmedDate;
             await proposal.save();
 
             // Create Event automatically
             const event = await Event.create({
                 space_id: proposal.space_id,
                 user_id: user._id,
-                start_date: body.date,
-                end_date: body.date,
+                start_date: confirmedDate,
+                end_date: confirmedDate,
                 status: 'busy',
                 note: `[定档] ${proposal.title}`,
                 visibility: 'public',
-                participants: [] // logic to add voters? For now empty or creator.
+                participants: []
             });
 
             // Notify all members
             const members = await SpaceMember.find({ space_id: proposal.space_id });
-            const notifications = members.map(m => ({
-                user_id: m.user_id,
-                space_id: proposal.space_id,
-                type: 'proposal_confirmed',
-                title: '🎉 活动已定档',
-                body: `"${proposal.title}" 定在 ${body.date}`,
-                from_user_id: user._id,
-                related_id: event._id.toString()
-            }));
-            await Notification.insertMany(notifications);
+            const notifications = members
+                .filter(m => m.user_id.toString() !== user._id.toString())
+                .map(m => ({
+                    user_id: m.user_id,
+                    space_id: proposal.space_id,
+                    type: 'proposal_confirmed',
+                    title: '🎉 活动已定档',
+                    body: `"${proposal.title}" 定在 ${confirmedDate}`,
+                    from_user_id: user._id,
+                    related_id: event._id.toString()
+                }));
+            if (notifications.length > 0) {
+                await Notification.insertMany(notifications);
+            }
+
+            // SSE: Push proposal_confirmed to space members
+            await pushToSpaceMembers(spaceId, 'proposal_confirmed', {
+                proposalId,
+                title: proposal.title,
+                confirmed_date: confirmedDate,
+                eventId: event._id.toString(),
+            }, user._id.toString());
 
             return NextResponse.json({ success: true, eventId: event._id.toString() });
+        }
+
+        if (body.action === 'cancel') {
+            // Cancel a proposal — only creator can cancel
+            if (proposal.created_by.toString() !== user._id.toString()) {
+                return NextResponse.json({ error: 'Only creator can cancel' }, { status: 403 });
+            }
+
+            proposal.status = 'cancelled';
+            await proposal.save();
+
+            // SSE: Push proposal_cancelled to space members
+            await pushToSpaceMembers(spaceId, 'proposal_cancelled', {
+                proposalId,
+                title: proposal.title,
+            }, user._id.toString());
+
+            return NextResponse.json({ success: true });
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
     } catch (error) {
+        console.error('Proposal action error:', error);
         return NextResponse.json({ error: 'Action failed' }, { status: 500 });
     }
 }
 
 export async function DELETE(request, { params }) {
     try {
-        const { proposalId } = params;
+        const { id: spaceId, proposalId } = await params;
+        await dbConnect();
         const user = await authenticate(request);
-        const proposal = await Proposal.findById(proposalId);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        const proposal = await Proposal.findById(proposalId);
         if (!proposal) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         if (proposal.created_by.toString() !== user._id.toString()) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -107,6 +123,7 @@ export async function DELETE(request, { params }) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
+        console.error('Delete proposal error:', error);
         return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
     }
 }

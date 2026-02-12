@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 
 const VOTE_OPTIONS = [
     { value: 'available', label: '✅ 可以', color: '#22c55e' },
@@ -52,6 +51,12 @@ export default function ProposalPage() {
         if (savedUser) setCurrentUser(JSON.parse(savedUser));
         fetchData();
     }, [fetchData, router]);
+
+    // Expose refresh for SSE-driven real-time updates
+    useEffect(() => {
+        window.__refreshProposals = fetchData;
+        return () => { delete window.__refreshProposals; };
+    }, [fetchData]);
 
     const handleAddDate = () => {
         if (dateInput && !newDates.includes(dateInput)) {
@@ -165,7 +170,7 @@ export default function ProposalPage() {
                                 <div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span style={{ fontSize: '1.05rem', fontWeight: 700 }}>{p.title}</span>
-                                        {p.status === 'open' && (
+                                        {p.status === 'active' && (
                                             <span className="status-badge status-available" style={{ fontSize: '0.65rem' }}>投票中</span>
                                         )}
                                         {p.status === 'confirmed' && (
@@ -195,7 +200,7 @@ export default function ProposalPage() {
                             )}
 
                             {/* Vote Matrix */}
-                            {p.status === 'open' && (
+                            {p.status === 'active' && (
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                                         <thead>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification, SpaceMember } from '@/models';
+import { pushToSpaceMembers } from '@/lib/sse';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -14,7 +15,7 @@ async function authenticate(request) {
 export async function GET(request, { params }) {
     // Get single event details
     try {
-        const { eventId } = params;
+        const { id: spaceId, eventId } = await params;
 
         await dbConnect();
         const user = await authenticate(request);
@@ -30,7 +31,7 @@ export async function GET(request, { params }) {
         users.forEach(u => userMap[u._id.toString()] = u);
 
         const enrichedDetails = event.participants?.map(p => ({
-            id: p.userId, // userId in DB is string (ObjectId string)
+            id: p.userId,
             status: p.status,
             comment: p.comment,
             nickname: userMap[p.userId]?.nickname || 'Unknown',
@@ -53,6 +54,7 @@ export async function GET(request, { params }) {
 
         return NextResponse.json({ event: result });
     } catch (error) {
+        console.error('Get event error:', error);
         return NextResponse.json({ error: 'Error' }, { status: 500 });
     }
 }
@@ -60,11 +62,12 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
     // Update Event
     try {
-        const { eventId } = params;
+        const { id: spaceId, eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
-        const event = await Event.findById(eventId);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        const event = await Event.findById(eventId);
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         if (event.user_id.toString() !== user._id.toString()) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -78,35 +81,40 @@ export async function PUT(request, { params }) {
         event.note = body.note !== undefined ? body.note : event.note;
         event.visibility = body.visibility || event.visibility;
 
-        // Sync participants? Re-invite logic is complex. For now assume minimal update.
-        // If body.participants provided, update list.
+        // Sync participants
         if (body.participants) {
-            // Logic to merge or replace? 
-            // Replacing logic:
-            // But preserving status?
-            // "Advanced sync": Keep existing statuses, add new ones as pending, remove missing.
             const existingMap = {};
             event.participants.forEach(p => existingMap[p.userId] = p);
 
             const newParticipants = body.participants.map(uid => {
-                if (existingMap[uid]) return existingMap[uid]; // Keep status
+                if (existingMap[uid]) return existingMap[uid];
                 return { userId: uid, status: 'pending', comment: '' };
             });
             event.participants = newParticipants;
         }
 
         await event.save();
+
+        // SSE: Push event_updated to all space members (except updater)
+        await pushToSpaceMembers(spaceId, 'event_updated', {
+            eventId: event._id.toString(),
+            userId: user._id.toString(),
+            nickname: user.nickname,
+        }, user._id.toString());
+
         return NextResponse.json({ success: true, event });
     } catch (error) {
+        console.error('Update event error:', error);
         return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
 }
 
 export async function DELETE(request, { params }) {
     try {
-        const { eventId } = params;
+        const { id: spaceId, eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const event = await Event.findById(eventId);
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -115,10 +123,18 @@ export async function DELETE(request, { params }) {
         }
 
         await Event.deleteOne({ _id: eventId });
-        await Notification.deleteMany({ related_id: eventId }); // Cleanup notifications
+        await Notification.deleteMany({ related_id: eventId });
+
+        // SSE: Push event_updated (deletion) to all space members
+        await pushToSpaceMembers(spaceId, 'event_updated', {
+            eventId,
+            deleted: true,
+            userId: user._id.toString(),
+        }, user._id.toString());
 
         return NextResponse.json({ success: true });
     } catch (error) {
+        console.error('Delete event error:', error);
         return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
     }
 }

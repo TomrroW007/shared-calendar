@@ -13,7 +13,8 @@ export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 // Space Schema
 const SpaceSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional?
+    invite_code: { type: String, unique: true },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     created_at: { type: Date, default: Date.now },
 });
 
@@ -23,6 +24,7 @@ export const Space = mongoose.models.Space || mongoose.model('Space', SpaceSchem
 const SpaceMemberSchema = new mongoose.Schema({
     space_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Space', required: true },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    role: { type: String, enum: ['admin', 'member'], default: 'member' },
     joined_at: { type: Date, default: Date.now },
 });
 // Compound index to prevent duplicate membership

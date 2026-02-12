@@ -16,20 +16,10 @@ export async function GET(request) {
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // Fetch notifications
-        // Sort by created_at desc
-        const notifications = await Notification.find({ user_id: user._id })
-            .sort({ created_at: -1 })
-            .limit(50)
-            .lean(); // Faster
-
         // Count unread
         const unreadCount = await Notification.countDocuments({ user_id: user._id, read: false });
 
-        // Resolve from_user info?
-        // We stored from_user_id (ObjectId).
-        // Let's populate manually or use .populate()
-        // Re-query to populate properly
+        // Fetch notifications with populated from_user
         const populated = await Notification.find({ user_id: user._id })
             .sort({ created_at: -1 })
             .limit(50)
