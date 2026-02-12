@@ -91,7 +91,7 @@ export default function EventModal({ date, event, members, currentUser, onClose,
             // Participants
             if (event.participants && event.participants.length > 0) {
                 if (event.participants.length === (members?.length || 0)) {
-                    setParticipantMode('select');
+                    setParticipantMode('all');
                 } else {
                     setParticipantMode('select');
                 }
@@ -99,22 +99,42 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                 setSelectedParticipants(pIds.filter(id => id !== event.user_id));
             } else {
                 setParticipantMode('none');
+                setSelectedParticipants([]);
             }
 
             // RSVP
             if (isParticipant && myParticipantInfo) {
                 setRsvpStatus(myParticipantInfo.status);
                 setRsvpComment(myParticipantInfo.comment || '');
+            } else {
+                setRsvpStatus('pending');
+                setRsvpComment('');
             }
+            return;
         }
-    }, [event, isParticipant, myParticipantInfo, members]);
+
+        // Ensure clean defaults when switching to create mode while modal remains mounted.
+        setStartDate(date);
+        setEndDate(date);
+        setStatus('busy');
+        setNote('');
+        setVisibility('public');
+        setParticipantMode('none');
+        setSelectedParticipants([]);
+        setRsvpStatus('pending');
+        setRsvpComment('');
+    }, [date, event, isParticipant, myParticipantInfo, members]);
 
     const displayStartDate = event?.start_date || startDate;
     const displayEndDate = event?.end_date || endDate;
 
     const buildParticipants = () => {
-        if (participantMode === 'all') return members.map(m => m.id);
-        if (participantMode === 'select') return [...selectedParticipants, currentUser.id];
+        if (participantMode === 'all') return (members || []).map(m => m.id);
+        if (participantMode === 'select') {
+            const base = selectedParticipants || [];
+            if (!currentUser?.id) return base;
+            return base.includes(currentUser.id) ? base : [...base, currentUser.id];
+        }
         return [];
     };
 
@@ -130,7 +150,11 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                 visibility,
                 participants: buildParticipants(),
             });
-            setIsEditing(false); // Switch to view mode after save? Or close? SpacePage closes modal usually.
+            // Only switch to view mode when editing an existing event.
+            // For newly created events, parent closes modal and `event` can still be null in this render frame.
+            if (event?.id) {
+                setIsEditing(false);
+            }
         } finally {
             setLoading(false);
         }
