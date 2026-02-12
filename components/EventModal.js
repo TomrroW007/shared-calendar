@@ -80,6 +80,17 @@ export default function EventModal({ date, event, members, currentUser, onClose,
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
 
+    const fetchComments = useCallback(async () => {
+        if (!event?.id) return;
+        try {
+            const res = await fetch(`/api/comments?relatedId=${event.id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            setComments(data.comments || []);
+        } catch (e) { console.error(e); }
+    }, [event?.id]);
+
     useEffect(() => {
         setIsEditing(!event?.id);
 
@@ -127,17 +138,6 @@ export default function EventModal({ date, event, members, currentUser, onClose,
         setRsvpComment('');
         setComments([]);
     }, [date, event, isParticipant, myParticipantInfo, members, fetchComments]);
-
-    const fetchComments = useCallback(async () => {
-        if (!event?.id) return;
-        try {
-            const res = await fetch(`/api/comments?relatedId=${event.id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            const data = await res.json();
-            setComments(data.comments || []);
-        } catch (e) { console.error(e); }
-    }, [event?.id]);
 
     const handleSendComment = async () => {
         if (!newComment.trim() || !event?.id) return;

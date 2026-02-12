@@ -16,17 +16,6 @@ export default function HomePage() {
     const [toast, setToast] = useState('');
     const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) setUser(JSON.parse(savedUser));
-        fetchSpaces(token);
-    }, [router, fetchSpaces]);
-
     const getToken = () => localStorage.getItem('token');
 
     const fetchSpaces = useCallback(async (token) => {
@@ -46,6 +35,17 @@ export default function HomePage() {
             setLoading(false);
         }
     }, [router]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) setUser(JSON.parse(savedUser));
+        fetchSpaces(token);
+    }, [router, fetchSpaces]);
 
     const showToast = (msg) => {
         setToast(msg);
