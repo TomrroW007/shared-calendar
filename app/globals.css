@@ -981,3 +981,74 @@ textarea.input {
 .card table td {
   border-bottom: 1px solid var(--border-color);
 }
+/* ===== Comment Section ===== */
+.comment-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.comment-bubble {
+  background: var(--bg-hover);
+  padding: 8px 12px;
+  border-radius: 0 12px 12px 12px;
+  flex: 1;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--accent-solid);
+}
+
+.comment-time {
+  color: var(--text-muted);
+}
+
+.comment-input-area {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.comment-input {
+  flex: 1;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.comment-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+

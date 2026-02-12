@@ -77,6 +77,8 @@ export default function EventModal({ date, event, members, currentUser, onClose,
     const [rsvpComment, setRsvpComment] = useState('');
 
     const [loading, setLoading] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
 
     useEffect(() => {
         setIsEditing(!event?.id);
@@ -87,6 +89,7 @@ export default function EventModal({ date, event, members, currentUser, onClose,
             setStatus(event.status);
             setNote(event.note || '');
             setVisibility(event.visibility || 'public');
+            fetchComments();
 
             // Participants
             if (event.participants && event.participants.length > 0) {
@@ -113,7 +116,6 @@ export default function EventModal({ date, event, members, currentUser, onClose,
             return;
         }
 
-        // Ensure clean defaults when switching to create mode while modal remains mounted.
         setStartDate(date);
         setEndDate(date);
         setStatus('busy');
@@ -123,7 +125,37 @@ export default function EventModal({ date, event, members, currentUser, onClose,
         setSelectedParticipants([]);
         setRsvpStatus('pending');
         setRsvpComment('');
+        setComments([]);
     }, [date, event, isParticipant, myParticipantInfo, members]);
+
+    const fetchComments = async () => {
+        if (!event?.id) return;
+        try {
+            const res = await fetch(`/api/comments?relatedId=${event.id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            setComments(data.comments || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const handleSendComment = async () => {
+        if (!newComment.trim() || !event?.id) return;
+        try {
+            const res = await fetch('/api/comments', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}` 
+                },
+                body: JSON.stringify({ relatedId: event.id, content: newComment.trim() })
+            });
+            if (res.ok) {
+                setNewComment('');
+                fetchComments();
+            }
+        } catch (e) { console.error(e); }
+    };
 
     const displayStartDate = event?.start_date || startDate;
     const displayEndDate = event?.end_date || endDate;
@@ -150,8 +182,6 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                 visibility,
                 participants: buildParticipants(),
             });
-            // Only switch to view mode when editing an existing event.
-            // For newly created events, parent closes modal and `event` can still be null in this render frame.
             if (event?.id) {
                 setIsEditing(false);
             }
@@ -322,7 +352,7 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                         )}
 
                         {/* Participants List */}
-                        <div>
+                        <div style={{ marginBottom: '20px' }}>
                             <h3 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>参与者 ({event.participant_details?.length || 0})</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {event.participant_details?.map(p => (
@@ -340,9 +370,37 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                                         </div>
                                     </div>
                                 ))}
-                                {(!event.participant_details || event.participant_details.length === 0) && (
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>无参与者</div>
+                            </div>
+                        </div>
+
+                        {/* Comment Section */}
+                        <div className="comment-section">
+                            <h3 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>💬 讨论</h3>
+                            <div className="comment-list">
+                                {comments.map(c => (
+                                    <div key={c._id} className="comment-item">
+                                        <span className="avatar avatar-sm" style={{ background: c.user_id.avatar_color }}>
+                                            {c.user_id.nickname.charAt(0)}
+                                        </span>
+                                        <div className="comment-bubble">
+                                            <div className="comment-meta">
+                                                <span className="comment-author">{c.user_id.nickname}</span>
+                                                <span className="comment-time">{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                            <div className="comment-text">{c.content}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {comments.length === 0 && (
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>还没有讨论，发一条吧</p>
                                 )}
+                            </div>
+                            <div className="comment-input-area">
+                                <input className="comment-input" placeholder="说点什么..." 
+                                    value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
+                                />
+                                <button className="comment-send-btn" onClick={handleSendComment}>🚀</button>
                             </div>
                         </div>
                     </div>

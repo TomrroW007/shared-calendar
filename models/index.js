@@ -79,16 +79,33 @@ const ParticipantSchema = new mongoose.Schema({
 const EventSchema = new mongoose.Schema({
     space_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Space', required: true },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    start_date: { type: String, required: true }, // Format: YYYY-MM-DD
+    start_date: { type: String, required: true }, // 冗余用于快速索引日期
     end_date: { type: String, required: true },
+    start_at: { type: Date }, // 精确开始时间 (UTC)
+    end_at: { type: Date },   // 精确结束时间 (UTC)
+    is_all_day: { type: Boolean, default: true },
     status: { type: String, enum: ['busy', 'vacation', 'available', 'tentative'], required: true },
     note: { type: String, default: '' },
+    location: { type: String, default: '' },
     visibility: { type: String, enum: ['public', 'private', 'status_only'], default: 'public' },
+    recurrence_rule: { type: String, default: null }, // RRule 字符串
+    timezone: { type: String, default: 'UTC' },
     participants: [ParticipantSchema],
     created_at: { type: Date, default: Date.now },
 });
 
 export const Event = mongoose.models.Event || mongoose.model('Event', EventSchema);
+
+// Comment Schema
+const CommentSchema = new mongoose.Schema({
+    related_id: { type: String, required: true, index: true }, // Event ID or Proposal ID
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    content: { type: String, required: true },
+    attachments: [{ type: String }],
+    created_at: { type: Date, default: Date.now },
+});
+
+export const Comment = mongoose.models.Comment || mongoose.model('Comment', CommentSchema);
 
 // Notification Schema
 const NotificationSchema = new mongoose.Schema({
@@ -107,9 +124,9 @@ export const Notification = mongoose.models.Notification || mongoose.model('Noti
 
 // Proposal Schema (StateMachine)
 const VoteSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Optional for guests? For now require user or simple string name?
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     guest_name: { type: String }, // For guests
-    vote: { type: String, enum: ['available', 'unavailable', 'if_need_be'], required: true },
+    vote: { type: String, enum: ['available', 'unavailable', 'if_need_be', 'maybe'], required: true },
     updated_at: { type: Date, default: Date.now }
 }, { _id: false });
 

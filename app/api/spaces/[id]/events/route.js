@@ -159,14 +159,38 @@ export async function POST(request, { params }) {
 
         const body = await request.json();
 
+        // Conflict Detection: Check if user is already busy/vacation during this period
+        if (body.status === 'busy' || body.status === 'vacation') {
+            const conflict = await Event.findOne({
+                space_id: spaceId,
+                user_id: user._id,
+                status: { $in: ['busy', 'vacation'] },
+                $or: [
+                    { start_date: { $lte: body.end_date }, end_date: { $gte: body.start_date } }
+                ]
+            });
+            if (conflict) {
+                return NextResponse.json({ 
+                    error: '时间冲突', 
+                    details: `你在 ${conflict.start_date} 至 ${conflict.end_date} 期间已有状态：${conflict.status}` 
+                }, { status: 409 });
+            }
+        }
+
         const event = await Event.create({
             space_id: spaceId,
             user_id: user._id,
             start_date: body.start_date,
             end_date: body.end_date,
+            start_at: body.start_at ? new Date(body.start_at) : null,
+            end_at: body.end_at ? new Date(body.end_at) : null,
+            is_all_day: body.is_all_day !== false,
             status: body.status,
             note: body.note,
+            location: body.location,
             visibility: body.visibility,
+            recurrence_rule: body.recurrence_rule,
+            timezone: body.timezone || 'UTC',
             participants: body.participants?.map(uid => ({
                 userId: uid,
                 status: uid === user._id.toString() ? 'accepted' : 'pending'
