@@ -41,6 +41,28 @@
 ## 3. 设计改进与完善（基于同类产品调研）
 通过对比 Google Calendar, TimeTree, Doodle 等软件，识别出当前版本的改进点：
 
+### 2.6 智能与协作增强 (New in v1.2)
+
+- **全局今日概览 (Dashboard)**：在首页顶部聚合展示所有空间的今日日程，借鉴 Notion Calendar 仪表盘设计。
+
+- **议程视图 (Agenda View)**：空间内增加“月历/议程”切换，提供垂直流式列表，优化移动端密集日程的阅读体验（类 TimeTree）。
+
+- **空间公告 (Space Memo)**：置顶显示的群组备忘录，用于存储地址、Wi-Fi 等长期共识信息。
+
+- **智能 Emoji 映射**：根据日程标题关键词（如“聚餐”、“会议”）自动匹配并展示对应 Emoji，提升视觉识别度。
+
+
+
+---
+
+
+
+## 3. 设计改进与完善（基于同类产品调研）
+
+通过对比 Google Calendar, TimeTree, Doodle 等软件，识别出当前版本的改进点：
+
+
+
 ### 3.1 核心日历与排程增强
 
 - **[高] 重复事件支持 (Recurring Events)**：
@@ -49,25 +71,17 @@
 
     - 需实现“修改单个事件”或“修改所有后续事件”的逻辑。
 
-- **[中] 多维度视图 (Multi-dimensional Views)**：
+- **[中] 活跃热力图 (Heatmap)**：
 
-    - **垂直列表视图 (Vertical/Agenda View)**：模仿 TimeTree，方便移动端快速浏览。
+    - 展示空间内成员活跃度，辅助寻找“最闲”日期。
 
-    * **热力图视图 (Heatmap)**：展示空间内成员活跃度，辅助寻找“最闲”日期。
-
-- **[高] 冲突检测与自动纠错 (Conflict & Correction)**：
-
-    - 实时冲突警告。
+- **[高] 自动纠错与留白**：
 
     - **自动缩减 (Speedy Meetings)**：模仿 Google Calendar，允许设置默认缩短 5-10 分钟以预留休息时间。
 
 
 
 ### 3.2 协同决策与沟通 (借鉴 TimeTree & Doodle)
-
-- **[高] 事件聊天室 (Event-specific Chat)**：
-
-    - 每个 Event 或 Proposal 自动关联一个小型聊天频道，支持留言和图片上传。
 
 - **[高] 匿名投票与偏好等级 (Advanced Polling)**：
 
@@ -104,6 +118,10 @@
 - **[低] 第三方集成 (Integrations)**：
 
     - 预留 Slack/Discord Webhook 接口，在空间发生变动时同步到沟通工具。
+
+- **[技术] PWA 离线支持**：
+
+    - 引入 Service Worker 和 IndexDB，实现无网状态下的日程查看与本地缓存。
 
 
 
