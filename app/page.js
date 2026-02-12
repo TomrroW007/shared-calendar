@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -25,11 +25,11 @@ export default function HomePage() {
         const savedUser = localStorage.getItem('user');
         if (savedUser) setUser(JSON.parse(savedUser));
         fetchSpaces(token);
-    }, [router]);
+    }, [router, fetchSpaces]);
 
     const getToken = () => localStorage.getItem('token');
 
-    const fetchSpaces = async (token) => {
+    const fetchSpaces = useCallback(async (token) => {
         try {
             const res = await fetch('/api/spaces', {
                 headers: { Authorization: `Bearer ${token || getToken()}` },
@@ -45,7 +45,7 @@ export default function HomePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [router]);
 
     const showToast = (msg) => {
         setToast(msg);

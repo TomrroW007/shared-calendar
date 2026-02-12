@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const STATUS_OPTIONS = [
     { value: 'vacation', label: '🏖️ 休假', className: 'status-vacation' },
@@ -126,9 +126,9 @@ export default function EventModal({ date, event, members, currentUser, onClose,
         setRsvpStatus('pending');
         setRsvpComment('');
         setComments([]);
-    }, [date, event, isParticipant, myParticipantInfo, members]);
+    }, [date, event, isParticipant, myParticipantInfo, members, fetchComments]);
 
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         if (!event?.id) return;
         try {
             const res = await fetch(`/api/comments?relatedId=${event.id}`, {
@@ -137,7 +137,7 @@ export default function EventModal({ date, event, members, currentUser, onClose,
             const data = await res.json();
             setComments(data.comments || []);
         } catch (e) { console.error(e); }
-    };
+    }, [event?.id]);
 
     const handleSendComment = async () => {
         if (!newComment.trim() || !event?.id) return;
