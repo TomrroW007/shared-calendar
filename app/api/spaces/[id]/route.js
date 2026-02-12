@@ -67,7 +67,8 @@ export async function POST(request, { params }) {
 
         await SpaceMember.create({
             space_id: id,
-            user_id: user._id
+            user_id: user._id,
+            role: 'editor'
         });
 
         // Notify others? (Optional, kept simple for now)

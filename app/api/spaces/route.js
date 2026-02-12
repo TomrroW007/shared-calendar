@@ -92,10 +92,11 @@ export async function POST(request) {
             created_by: user._id
         });
 
-        // Add creator as member
+        // Add creator as owner
         await SpaceMember.create({
             space_id: space._id,
-            user_id: user._id
+            user_id: user._id,
+            role: 'owner'
         });
 
         return NextResponse.json({
