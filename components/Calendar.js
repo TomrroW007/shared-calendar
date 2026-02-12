@@ -108,6 +108,8 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
                 {displayCells.map((cell, idx) => {
                     const isToday = cell.dateStr === todayStr;
                     const dayEvents = cell.dateStr ? getEventsForDate(filteredEvents, cell.dateStr) : [];
+                    const holiday = cell.dateStr ? holidays[cell.dateStr] : null;
+
                     // Deduplicate by user to show at most one dot per user
                     const uniqueUserEvents = [];
                     const seen = new Set();
@@ -118,16 +120,28 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
                         }
                     }
 
+                    // Weekend check (0=Sun, 6=Sat)
+                    const dayOfWeek = idx % 7;
+                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
                     return (
                         <button
                             key={idx}
-                            className={`calendar-day${cell.otherMonth ? ' other-month' : ''}${isToday ? ' today' : ''}`}
+                            className={`calendar-day${cell.otherMonth ? ' other-month' : ''}${isToday ? ' today' : ''}${holiday?.type === 'holiday' ? ' is-holiday' : ''}${holiday?.type === 'workday' ? ' is-workday' : ''}`}
                             onClick={() => {
                                 if (!cell.otherMonth && cell.dateStr) onDateClick(cell.dateStr);
                             }}
                             disabled={cell.otherMonth}
+                            title={holiday ? holiday.name : undefined}
                         >
-                            <span className="day-number">{cell.day}</span>
+                            <span className={`day-number${(isWeekend && !cell.otherMonth) ? ' weekend' : ''}`}>
+                                {cell.day}
+                            </span>
+                            {holiday && !cell.otherMonth && (
+                                <span className={`holiday-label ${holiday.type}`}>
+                                    {holiday.type === 'workday' ? '班' : holiday.name.length > 2 ? holiday.name.slice(0, 2) : holiday.name}
+                                </span>
+                            )}
                             {uniqueUserEvents.length > 0 && (
                                 <div className="day-dots">
                                     {uniqueUserEvents.slice(0, 4).map((e, i) => (

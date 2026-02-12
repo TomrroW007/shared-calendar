@@ -1052,3 +1052,37 @@ textarea.input {
   justify-content: center;
 }
 
+
+/* ===== Holiday Styles ===== */
+.holiday-label {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 0.6rem;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.holiday-label.holiday {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.holiday-label.workday {
+  background: rgba(107, 107, 128, 0.15);
+  color: var(--text-muted);
+}
+
+.calendar-day.is-holiday {
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.calendar-day.is-workday {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.day-number.weekend {
+  color: #f87171;
+}
+

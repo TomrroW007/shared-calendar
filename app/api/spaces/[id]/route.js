@@ -77,3 +77,29 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: 'Join failed' }, { status: 500 });
     }
 }
+
+export async function DELETE(request, { params }) {
+    // Leave space
+    try {
+        const { id: spaceId } = await params;
+        await dbConnect();
+        const user = await authenticate(request);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // Remove membership
+        const result = await SpaceMember.deleteOne({ space_id: spaceId, user_id: user._id });
+        
+        if (result.deletedCount === 0) {
+            return NextResponse.json({ error: 'Not a member' }, { status: 404 });
+        }
+
+        // Optional: If the user was the last owner/admin, should we assign someone else?
+        // Or if the space is now empty, delete the space?
+        // For now, keep it simple.
+
+        return NextResponse.json({ success: true, message: 'Left space successfully' });
+    } catch (error) {
+        console.error('Leave space error:', error);
+        return NextResponse.json({ error: 'Leave failed' }, { status: 500 });
+    }
+}
