@@ -1086,3 +1086,38 @@ textarea.input {
   color: #f87171;
 }
 
+
+/* ===== Account Modal & Token ===== */
+.token-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-hover);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  margin: 16px 0;
+  border: 1px dashed var(--border-accent);
+}
+
+.token-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.token-value {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--accent-solid);
+  word-break: break-all;
+  user-select: all;
+}
+
+.login-mode-toggle {
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
