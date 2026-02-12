@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -9,7 +9,12 @@ export default function LoginPage() {
     const [mode, setLoginMode] = useState('register'); // 'register' or 'token'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [mounted, setMounted] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -79,7 +84,7 @@ export default function LoginPage() {
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
                             maxLength={20}
-                            autoFocus
+                            autoFocus={mounted}
                         />
                     </div>
                 ) : (
@@ -90,7 +95,7 @@ export default function LoginPage() {
                             placeholder="粘贴你的访问令牌 (Access Token)"
                             value={tokenInput}
                             onChange={(e) => setTokenInput(e.target.value)}
-                            autoFocus
+                            autoFocus={mounted}
                         />
                     </div>
                 )}
