@@ -26,13 +26,12 @@ export async function GET(request, { params }) {
         const membership = await SpaceMember.findOne({ space_id: id, user_id: user._id });
         if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        // Get members with role
+        // Get members
         const membersRefs = await SpaceMember.find({ space_id: id }).populate('user_id');
         const members = membersRefs.map(m => ({
             id: m.user_id._id.toString(),
             nickname: m.user_id.nickname,
-            avatar_color: m.user_id.avatar_color,
-            role: m.role || 'member'
+            avatar_color: m.user_id.avatar_color
         }));
 
         return NextResponse.json({
@@ -45,24 +44,63 @@ export async function GET(request, { params }) {
             members
         });
     } catch (error) {
-        console.error('Fetch space error:', error);
         return NextResponse.json({ error: 'Error fetching space' }, { status: 500 });
     }
 }
 
-export async function DELETE(request, { params }) {
-    // Leave space (or delete if admin)
+export async function POST(request, { params }) {
+    // Join space
     try {
         const { id } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // Remove membership
-        await SpaceMember.deleteOne({ space_id: id, user_id: user._id });
+        const space = await Space.findById(id);
+        if (!space) return NextResponse.json({ error: 'Space not found' }, { status: 404 });
 
-        return NextResponse.json({ success: true });
+        // Check if already member
+        const exists = await SpaceMember.findOne({ space_id: id, user_id: user._id });
+        if (exists) {
+            return NextResponse.json({ message: 'Already a member' });
+        }
+
+        await SpaceMember.create({
+            space_id: id,
+            user_id: user._id,
+            role: 'editor'
+        });
+
+        // Notify others? (Optional, kept simple for now)
+
+        return NextResponse.json({ message: 'Joined successfully' });
     } catch (error) {
+        return NextResponse.json({ error: 'Join failed' }, { status: 500 });
+    }
+}
+
+export async function DELETE(request, { params }) {
+    // Leave space
+    try {
+        const { id: spaceId } = await params;
+        await dbConnect();
+        const user = await authenticate(request);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // Remove membership
+        const result = await SpaceMember.deleteOne({ space_id: spaceId, user_id: user._id });
+        
+        if (result.deletedCount === 0) {
+            return NextResponse.json({ error: 'Not a member' }, { status: 404 });
+        }
+
+        // Optional: If the user was the last owner/admin, should we assign someone else?
+        // Or if the space is now empty, delete the space?
+        // For now, keep it simple.
+
+        return NextResponse.json({ success: true, message: 'Left space successfully' });
+    } catch (error) {
+        console.error('Leave space error:', error);
         return NextResponse.json({ error: 'Leave failed' }, { status: 500 });
     }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,26 +10,30 @@ export default function HomePage() {
     const [user, setUser] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showJoin, setShowJoin] = useState(false);
+    const [showAccount, setShowAccount] = useState(false);
     const [newSpaceName, setNewSpaceName] = useState('');
     const [inviteCode, setInviteCode] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
     const [toast, setToast] = useState('');
     const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) setUser(JSON.parse(savedUser));
-        fetchSpaces(token);
-    }, [router]);
-
     const getToken = () => localStorage.getItem('token');
 
-    const fetchSpaces = async (token) => {
+    const handleLogout = () => {
+        if (!confirm('确定要退出登录吗？\n退出前请确保已保存好你的访问令牌。')) return;
+        localStorage.clear();
+        router.push('/login');
+    };
+
+    const handleCopyToken = () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            navigator.clipboard.writeText(token);
+            showToast('令牌已复制到剪贴板');
+        }
+    };
+
+    const fetchSpaces = useCallback(async (token) => {
         try {
             const res = await fetch('/api/spaces', {
                 headers: { Authorization: `Bearer ${token || getToken()}` },
@@ -45,7 +49,18 @@ export default function HomePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [router]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) setUser(JSON.parse(savedUser));
+        fetchSpaces(token);
+    }, [router, fetchSpaces]);
 
     const showToast = (msg) => {
         setToast(msg);
@@ -125,7 +140,7 @@ export default function HomePage() {
                         {user && <p className="subtitle">Hi, {user.nickname} 👋</p>}
                     </div>
                     {user && (
-                        <div className="avatar" style={{ background: user.avatar_color }}>
+                        <div className="avatar" style={{ background: user.avatar_color, cursor: 'pointer' }} onClick={() => setShowAccount(true)}>
                             {user.nickname?.charAt(0)}
                         </div>
                     )}
@@ -165,6 +180,39 @@ export default function HomePage() {
                     </button>
                 </div>
             </div>
+
+            {/* Account Modal */}
+            {showAccount && user && (
+                <div className="modal-overlay" onClick={() => setShowAccount(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>我的账户</h2>
+                            <button className="modal-close" onClick={() => setShowAccount(false)}>✕</button>
+                        </div>
+                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                            <div className="avatar avatar-lg" style={{ background: user.avatar_color, margin: '0 auto 12px', width: 64, height: 64, fontSize: '1.5rem' }}>
+                                {user.nickname?.charAt(0)}
+                            </div>
+                            <h3 style={{ fontSize: '1.2rem' }}>{user.nickname}</h3>
+                        </div>
+
+                        <div className="token-display">
+                            <span className="token-label">访问令牌 (Access Token)</span>
+                            <span className="token-value">{localStorage.getItem('token')}</span>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                ⚠️ 这是你进入账户的唯一凭证，请妥善保存。你可以在其他设备上使用此令牌登录。
+                            </p>
+                        </div>
+
+                        <button className="btn btn-secondary btn-full" onClick={handleCopyToken} style={{ marginBottom: '12px' }}>
+                            📋 复制令牌
+                        </button>
+                        <button className="btn btn-danger btn-full" onClick={handleLogout}>
+                            🚪 退出登录
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Create Space Modal */}
             {showCreate && (

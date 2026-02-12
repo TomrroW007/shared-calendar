@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Space, SpaceMember, User } from '@/models';
 
+function getUserFromToken(request) {
+    // We need to fetch user from DB by token
+    // This is async now. But this function is usually sync helper.
+    // We'll refactor this helper pattern.
+    return null;
+}
+
 // Authentication Helper
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -14,61 +21,46 @@ async function authenticate(request) {
     return user;
 }
 
-// Generate a random 6-char invite code
-function generateInviteCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
-
-// GET /api/spaces — List spaces the current user belongs to
 export async function GET(request) {
     try {
         const user = await authenticate(request);
         if (!user) {
-            return NextResponse.json({ error: '未授权' }, { status: 401 });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await dbConnect();
+        // Find all spaces where user is a member
+        const memberships = await SpaceMember.find({ user_id: user._id }).populate('space_id');
 
-        // Find all memberships for this user
-        const memberships = await SpaceMember.find({ user_id: user._id }).lean();
-        const spaceIds = memberships.map(m => m.space_id);
+        // Filter out any null spaces (in case space was deleted but membership wasn't)
+        const spaces = memberships
+            .filter(m => m.space_id)
+            .map(m => ({
+                id: m.space_id._id.toString(),
+                name: m.space_id.name,
+                invite_code: m.space_id.invite_code,
+                role: m.space_id.created_by.toString() === user._id.toString() ? 'admin' : 'member',
+                member_count: 1 // We might want to fetch real count, but for now keep it simple or do a separate aggregation
+            }));
 
-        // Fetch spaces
-        const spaces = await Space.find({ _id: { $in: spaceIds } }).lean();
+        // For member_count, we can do a quick count if needed, but let's see if page.js needs it.
+        // page.js uses space.member_count.
+        // Let's force it to 1 or calculate it? 
+        // Calculating exact count for all spaces might be slow. 
+        // Let's just return what we have. API usually returns it.
 
-        // Get member counts for each space
-        const memberCounts = await SpaceMember.aggregate([
-            { $match: { space_id: { $in: spaceIds } } },
-            { $group: { _id: '$space_id', count: { $sum: 1 } } }
-        ]);
-        const countMap = {};
-        memberCounts.forEach(mc => { countMap[mc._id.toString()] = mc.count; });
+        // Let's do a second pass to count members for these spaces?
+        // Or just `Promise.all` it.
+        for (let space of spaces) {
+            space.member_count = await SpaceMember.countDocuments({ space_id: space.id });
+        }
 
-        // Build role map from memberships
-        const roleMap = {};
-        memberships.forEach(m => { roleMap[m.space_id.toString()] = m.role || 'member'; });
-
-        const result = spaces.map(s => ({
-            id: s._id.toString(),
-            name: s.name,
-            invite_code: s.invite_code,
-            member_count: countMap[s._id.toString()] || 0,
-            role: roleMap[s._id.toString()] || 'member',
-        }));
-
-        return NextResponse.json({ spaces: result });
+        return NextResponse.json({ spaces });
     } catch (error) {
-        console.error('List spaces error:', error);
-        return NextResponse.json({ error: '获取空间列表失败' }, { status: 500 });
+        console.error('Fetch spaces error:', error);
+        return NextResponse.json({ error: 'Failed to fetch spaces' }, { status: 500 });
     }
 }
 
-// POST /api/spaces — Create new space
 export async function POST(request) {
     try {
         const user = await authenticate(request);
@@ -81,16 +73,16 @@ export async function POST(request) {
             return NextResponse.json({ error: '空间名称必填' }, { status: 400 });
         }
 
-        await dbConnect();
-
         // Generate unique invite code
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let invite_code;
-        let attempts = 0;
-        while (attempts < 10) {
-            invite_code = generateInviteCode();
-            const existing = await Space.findOne({ invite_code });
-            if (!existing) break;
-            attempts++;
+        let codeExists = true;
+        while (codeExists) {
+            invite_code = '';
+            for (let i = 0; i < 6; i++) {
+                invite_code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            codeExists = await Space.findOne({ invite_code });
         }
 
         // Create Space
@@ -100,11 +92,11 @@ export async function POST(request) {
             created_by: user._id
         });
 
-        // Add creator as admin member
+        // Add creator as owner
         await SpaceMember.create({
             space_id: space._id,
             user_id: user._id,
-            role: 'admin'
+            role: 'owner'
         });
 
         return NextResponse.json({

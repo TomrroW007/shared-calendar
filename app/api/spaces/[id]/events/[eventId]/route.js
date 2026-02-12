@@ -1,7 +1,24 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import dbConnect from '@/lib/mongodb';
 import { Event, User, Notification, SpaceMember } from '@/models';
 import { pushToSpaceMembers } from '@/lib/sse';
+
+function serializeEvent(eventDoc, owner) {
+    return {
+        id: eventDoc._id.toString(),
+        user_id: owner?._id?.toString() || eventDoc.user_id.toString(),
+        nickname: owner?.nickname,
+        avatar_color: owner?.avatar_color,
+        start_date: eventDoc.start_date,
+        end_date: eventDoc.end_date,
+        status: eventDoc.status,
+        note: eventDoc.note,
+        visibility: eventDoc.visibility,
+        participants: eventDoc.participants?.map((p) => p.userId?.toString() || p.userId) || [],
+        participant_details: []
+    };
+}
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -13,10 +30,8 @@ async function authenticate(request) {
 }
 
 export async function GET(request, { params }) {
-    // Get single event details
     try {
-        const { id: spaceId, eventId } = await params;
-
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +39,6 @@ export async function GET(request, { params }) {
         const event = await Event.findById(eventId).populate('user_id', 'nickname avatar_color').lean();
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        // Get Participants details
         const userIds = event.participants?.map(p => p.userId) || [];
         const users = await User.find({ _id: { $in: userIds } }).lean();
         const userMap = {};
@@ -54,34 +68,30 @@ export async function GET(request, { params }) {
 
         return NextResponse.json({ event: result });
     } catch (error) {
-        console.error('Get event error:', error);
         return NextResponse.json({ error: 'Error' }, { status: 500 });
     }
 }
 
 export async function PUT(request, { params }) {
-    // Update Event
     try {
-        const { id: spaceId, eventId } = await params;
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
         const event = await Event.findById(eventId);
+
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         if (event.user_id.toString() !== user._id.toString()) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await request.json();
-        // Update fields
         event.start_date = body.start_date || event.start_date;
         event.end_date = body.end_date || event.end_date;
         event.status = body.status || event.status;
         event.note = body.note !== undefined ? body.note : event.note;
         event.visibility = body.visibility || event.visibility;
 
-        // Sync participants
         if (body.participants) {
             const existingMap = {};
             event.participants.forEach(p => existingMap[p.userId] = p);
@@ -95,26 +105,24 @@ export async function PUT(request, { params }) {
 
         await event.save();
 
-        // SSE: Push event_updated to all space members (except updater)
-        await pushToSpaceMembers(spaceId, 'event_updated', {
-            eventId: event._id.toString(),
-            userId: user._id.toString(),
-            nickname: user.nickname,
+        const serializedEvent = serializeEvent(event, user);
+
+        await pushToSpaceMembers(event.space_id, 'event_updated', {
+            eventId: eventId,
+            event: serializedEvent,
         }, user._id.toString());
 
-        return NextResponse.json({ success: true, event });
+        return NextResponse.json({ success: true, event: serializedEvent });
     } catch (error) {
-        console.error('Update event error:', error);
         return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
 }
 
 export async function DELETE(request, { params }) {
     try {
-        const { id: spaceId, eventId } = await params;
+        const { eventId } = await params;
         await dbConnect();
         const user = await authenticate(request);
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const event = await Event.findById(eventId);
         if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -125,16 +133,12 @@ export async function DELETE(request, { params }) {
         await Event.deleteOne({ _id: eventId });
         await Notification.deleteMany({ related_id: eventId });
 
-        // SSE: Push event_updated (deletion) to all space members
-        await pushToSpaceMembers(spaceId, 'event_updated', {
-            eventId,
-            deleted: true,
-            userId: user._id.toString(),
+        await pushToSpaceMembers(event.space_id, 'event_deleted', {
+            eventId: eventId,
         }, user._id.toString());
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Delete event error:', error);
         return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
     }
 }

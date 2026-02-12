@@ -119,10 +119,10 @@ export default function ProposalPage() {
     const handleConfirm = async (proposalId, date) => {
         if (!confirm(`确认将活动定在 ${date}？`)) return;
         try {
-            const res = await fetch(`/api/spaces/${spaceId}/proposals/${proposalId}`, {
-                method: 'PUT',
+            const res = await fetch(`/api/spaces/${spaceId}/proposals/${proposalId}/confirm`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                body: JSON.stringify({ action: 'confirm', confirmed_date: date }),
+                body: JSON.stringify({ date }),
             });
             if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
             showToast('🎉 活动已确认！');
@@ -134,9 +134,9 @@ export default function ProposalPage() {
         if (!confirm('取消这个提案？')) return;
         try {
             await fetch(`/api/spaces/${spaceId}/proposals/${proposalId}`, {
-                method: 'PUT',
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-                body: JSON.stringify({ action: 'cancel' }),
+                body: JSON.stringify({ status: 'cancelled' }),
             });
             showToast('提案已取消');
             fetchData();

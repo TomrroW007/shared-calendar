@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { getHolidaysForMonth } from '@/lib/holidays';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -28,6 +29,26 @@ function getEventsForDate(events, dateStr) {
 }
 
 export default function Calendar({ year, month, events, onDateClick, onPrev, onNext, filterUserId }) {
+    const [holidays, setHolidays] = useState({});
+
+    // Load holidays when year/month changes
+    useEffect(() => {
+        let mounted = true;
+        
+        getHolidaysForMonth(year, month).then(data => {
+            if (mounted) {
+                setHolidays(data);
+            }
+        }).catch(err => {
+            console.error('加载节假日数据失败:', err);
+            if (mounted) {
+                setHolidays({});
+            }
+        });
+
+        return () => { mounted = false; };
+    }, [year, month]);
+
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
     const prevMonthDays = getDaysInMonth(year, month - 1);
@@ -39,9 +60,6 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
         '一月', '二月', '三月', '四月', '五月', '六月',
         '七月', '八月', '九月', '十月', '十一月', '十二月',
     ];
-
-    // Get holidays for this month
-    const holidays = getHolidaysForMonth(year, month);
 
     // Build calendar grid
     const cells = [];

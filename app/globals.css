@@ -495,6 +495,20 @@ textarea.input {
   }
 }
 
+/* ===== Notification Bell Pulse ===== */
+@keyframes notif-pulse {
+  0% { transform: scale(1); box-shadow: none; }
+  25% { transform: scale(1.15); box-shadow: 0 0 12px var(--accent-glow); }
+  50% { transform: scale(1.05); box-shadow: 0 0 8px var(--accent-glow); }
+  75% { transform: scale(1.1); box-shadow: 0 0 10px var(--accent-glow); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+
+.notif-bell-pulse {
+  animation: notif-pulse 0.8s ease-in-out;
+  border-color: var(--accent-solid) !important;
+}
+
 /* ===== Calendar Styles ===== */
 .calendar {
   margin: 8px 0;
@@ -998,3 +1012,143 @@ textarea.input {
 .card table td {
   border-bottom: 1px solid var(--border-color);
 }
+/* ===== Comment Section ===== */
+.comment-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.comment-bubble {
+  background: var(--bg-hover);
+  padding: 8px 12px;
+  border-radius: 0 12px 12px 12px;
+  flex: 1;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--accent-solid);
+}
+
+.comment-time {
+  color: var(--text-muted);
+}
+
+.comment-input-area {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.comment-input {
+  flex: 1;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.comment-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ===== Holiday Styles ===== */
+.holiday-label {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 0.6rem;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.holiday-label.holiday {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.holiday-label.workday {
+  background: rgba(107, 107, 128, 0.15);
+  color: var(--text-muted);
+}
+
+.calendar-day.is-holiday {
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.calendar-day.is-workday {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.day-number.weekend {
+  color: #f87171;
+}
+
+
+/* ===== Account Modal & Token ===== */
+.token-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-hover);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  margin: 16px 0;
+  border: 1px dashed var(--border-accent);
+}
+
+.token-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.token-value {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--accent-solid);
+  word-break: break-all;
+  user-select: all;
+}
+
+.login-mode-toggle {
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+

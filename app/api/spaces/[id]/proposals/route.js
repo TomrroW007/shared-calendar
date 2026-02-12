@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { Proposal, SpaceMember, User, Notification } from '@/models';
-import { pushToUser } from '@/lib/sse';
+import { Proposal, Space, SpaceMember, User } from '@/models';
+import { pushToSpaceMembers } from '@/lib/sse';
+import { sendPushToSpaceMembers } from '@/lib/push';
 
 async function authenticate(request) {
     const authHeader = request.headers.get('authorization');
@@ -15,54 +16,47 @@ async function authenticate(request) {
 export async function GET(request, { params }) {
     try {
         const { id: spaceId } = await params;
-        await dbConnect();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // Check member
+        // Check membership
         const member = await SpaceMember.findOne({ space_id: spaceId, user_id: user._id });
         if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+        // Fetch proposals
+        // Populate creator details
         const proposals = await Proposal.find({ space_id: spaceId })
-            .sort({ created_at: -1 })
             .populate('created_by', 'nickname avatar_color')
-            .populate('candidates.votes.user_id', 'nickname avatar_color')
+            .sort({ created_at: -1 })
             .lean();
 
-        // Transform to match frontend expected shape
-        const result = proposals.map(p => {
-            // Build candidate_dates array
-            const candidate_dates = p.candidates.map(c => c.date);
-
-            // Build vote_matrix: { date: { userId: vote } }
-            const vote_matrix = {};
-            p.candidates.forEach(c => {
-                vote_matrix[c.date] = {};
-                c.votes.forEach(v => {
-                    const uid = v.user_id?._id?.toString() || v.user_id?.toString();
-                    if (uid) {
-                        vote_matrix[c.date][uid] = v.vote;
-                    }
-                });
-            });
-
-            return {
-                id: p._id.toString(),
-                title: p.title,
-                creator_nickname: p.created_by?.nickname || 'Unknown',
-                creator_avatar_color: p.created_by?.avatar_color || '#666',
-                creator_id: p.created_by?._id?.toString(),
-                status: p.status,
-                confirmed_date: p.final_date,
-                candidate_dates,
-                vote_matrix,
-                participants: p.participants?.map(pid => pid.toString()) || [],
-            };
-        });
+        // Transform if needed (e.g. status summary)
+        const result = proposals.map(p => ({
+            id: p._id.toString(),
+            title: p.title,
+            description: p.description,
+            status: p.status,
+            slots: p.slots.map(s => ({
+                start_date: s.start_date,
+                end_date: s.end_date,
+                vote_count: s.votes?.length || 0,
+                // Hide votes for summary list? Or show full?
+                // Let's show full for now as lists are small
+                votes: s.votes
+            })),
+            created_by: {
+                id: p.created_by._id.toString(),
+                nickname: p.created_by.nickname,
+                avatar_color: p.created_by.avatar_color
+            },
+            created_at: p.created_at,
+            settings: p.settings
+        }));
 
         return NextResponse.json({ proposals: result });
+
     } catch (error) {
-        console.error('Fetch proposals error:', error);
+        console.error(error);
         return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
     }
 }
@@ -70,58 +64,55 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
     try {
         const { id: spaceId } = await params;
-        const body = await request.json();
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        await dbConnect();
+        // Check role
+        const member = await SpaceMember.findOne({ space_id: spaceId, user_id: user._id });
+        if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        // Frontend sends candidate_dates (array of date strings)
-        const dates = body.candidate_dates || body.candidates || [];
-        if (!body.title || dates.length === 0) {
-            return NextResponse.json({ error: '标题和候选日期不能为空' }, { status: 400 });
+        if (['viewer', 'guest'].includes(member.role)) {
+            return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
         }
 
-        // Create
+        const body = await request.json();
+        // Validation: body.slots array required
+        if (!body.slots || !Array.isArray(body.slots) || body.slots.length === 0) {
+            return NextResponse.json({ error: 'At least one slot required' }, { status: 400 });
+        }
+
         const proposal = await Proposal.create({
             space_id: spaceId,
             created_by: user._id,
             title: body.title,
-            candidates: dates.map(date => ({ date, votes: [] })),
-            status: 'active'
+            description: body.description,
+            status: 'voting', // Default
+            slots: body.slots.map(s => ({
+                start_date: s.start_date,
+                end_date: s.end_date,
+                votes: []
+            })),
+            settings: body.settings || {}
         });
 
-        // Notify Space Members
-        const members = await SpaceMember.find({ space_id: spaceId });
-        const notifications = members
-            .filter(m => m.user_id.toString() !== user._id.toString())
-            .map(m => ({
-                user_id: m.user_id,
-                space_id: spaceId,
-                type: 'proposal_created',
-                title: '📋 新的约活动',
-                body: `${user.nickname} 发起了: ${body.title}`,
-                from_user_id: user._id,
-                related_id: proposal._id.toString()
-            }));
+        // Push SSE
+        await pushToSpaceMembers(spaceId, 'proposal_created', {
+            proposalId: proposal._id.toString(),
+            title: proposal.title,
+            created_by: user.nickname
+        }, user._id.toString());
 
-        if (notifications.length > 0) {
-            const inserted = await Notification.insertMany(notifications);
-            // Push via SSE
-            inserted.forEach(n => {
-                pushToUser(n.user_id.toString(), 'notification', {
-                    id: n._id,
-                    title: n.title,
-                    body: n.body,
-                    type: n.type,
-                    created_at: n.created_at,
-                });
-            });
-        }
+        // WebPush
+        await sendPushToSpaceMembers(spaceId, {
+            title: '🗳️ New Proposal',
+            body: `${user.nickname} proposed: ${proposal.title}`,
+            url: `/space/${spaceId}/proposal/${proposal._id}`
+        }, user._id.toString());
 
         return NextResponse.json({ success: true, proposal: { id: proposal._id.toString() } });
+
     } catch (error) {
-        console.error('Create proposal error:', error);
+        console.error(error);
         return NextResponse.json({ error: 'Create failed' }, { status: 500 });
     }
 }

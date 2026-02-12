@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const STATUS_OPTIONS = [
     { value: 'vacation', label: '🏖️ 休假', className: 'status-vacation' },
@@ -77,19 +77,35 @@ export default function EventModal({ date, event, members, currentUser, onClose,
     const [rsvpComment, setRsvpComment] = useState('');
 
     const [loading, setLoading] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState('');
+
+    const fetchComments = useCallback(async () => {
+        if (!event?.id) return;
+        try {
+            const res = await fetch(`/api/comments?relatedId=${event.id}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            const data = await res.json();
+            setComments(data.comments || []);
+        } catch (e) { console.error(e); }
+    }, [event?.id]);
 
     useEffect(() => {
+        setIsEditing(!event?.id);
+
         if (event) {
             setStartDate(event.start_date);
             setEndDate(event.end_date);
             setStatus(event.status);
             setNote(event.note || '');
             setVisibility(event.visibility || 'public');
+            fetchComments();
 
             // Participants
             if (event.participants && event.participants.length > 0) {
                 if (event.participants.length === (members?.length || 0)) {
-                    setParticipantMode('select');
+                    setParticipantMode('all');
                 } else {
                     setParticipantMode('select');
                 }
@@ -97,19 +113,60 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                 setSelectedParticipants(pIds.filter(id => id !== event.user_id));
             } else {
                 setParticipantMode('none');
+                setSelectedParticipants([]);
             }
 
             // RSVP
             if (isParticipant && myParticipantInfo) {
                 setRsvpStatus(myParticipantInfo.status);
                 setRsvpComment(myParticipantInfo.comment || '');
+            } else {
+                setRsvpStatus('pending');
+                setRsvpComment('');
             }
+            return;
         }
-    }, [event, isParticipant, myParticipantInfo, members]);
+
+        setStartDate(date);
+        setEndDate(date);
+        setStatus('busy');
+        setNote('');
+        setVisibility('public');
+        setParticipantMode('none');
+        setSelectedParticipants([]);
+        setRsvpStatus('pending');
+        setRsvpComment('');
+        setComments([]);
+    }, [date, event, isParticipant, myParticipantInfo, members, fetchComments]);
+
+    const handleSendComment = async () => {
+        if (!newComment.trim() || !event?.id) return;
+        try {
+            const res = await fetch('/api/comments', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}` 
+                },
+                body: JSON.stringify({ relatedId: event.id, content: newComment.trim() })
+            });
+            if (res.ok) {
+                setNewComment('');
+                fetchComments();
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const displayStartDate = event?.start_date || startDate;
+    const displayEndDate = event?.end_date || endDate;
 
     const buildParticipants = () => {
-        if (participantMode === 'all') return members.map(m => m.id);
-        if (participantMode === 'select') return [...selectedParticipants, currentUser.id];
+        if (participantMode === 'all') return (members || []).map(m => m.id);
+        if (participantMode === 'select') {
+            const base = selectedParticipants || [];
+            if (!currentUser?.id) return base;
+            return base.includes(currentUser.id) ? base : [...base, currentUser.id];
+        }
         return [];
     };
 
@@ -125,7 +182,9 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                 visibility,
                 participants: buildParticipants(),
             });
-            setIsEditing(false); // Switch to view mode after save? Or close? SpacePage closes modal usually.
+            if (event?.id) {
+                setIsEditing(false);
+            }
         } finally {
             setLoading(false);
         }
@@ -245,12 +304,12 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                             </button>
                         </div>
                     </form>
-                ) : (
+                ) : event ? (
                     // VIEW MODE (Read Only + RSVP)
                     <div>
                         <div style={{ marginBottom: '20px' }}>
                             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                                📅 {event.start_date} {event.start_date !== event.end_date ? `~ ${event.end_date}` : ''}
+                                📅 {displayStartDate} {displayStartDate !== displayEndDate ? `~ ${displayEndDate}` : ''}
                             </div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '8px' }}>
                                 {event.note || '无主题'}
@@ -293,7 +352,7 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                         )}
 
                         {/* Participants List */}
-                        <div>
+                        <div style={{ marginBottom: '20px' }}>
                             <h3 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>参与者 ({event.participant_details?.length || 0})</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {event.participant_details?.map(p => (
@@ -311,12 +370,42 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                                         </div>
                                     </div>
                                 ))}
-                                {(!event.participant_details || event.participant_details.length === 0) && (
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>无参与者</div>
+                            </div>
+                        </div>
+
+                        {/* Comment Section */}
+                        <div className="comment-section">
+                            <h3 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>💬 讨论</h3>
+                            <div className="comment-list">
+                                {comments.map(c => (
+                                    <div key={c._id} className="comment-item">
+                                        <span className="avatar avatar-sm" style={{ background: c.user_id.avatar_color }}>
+                                            {c.user_id.nickname.charAt(0)}
+                                        </span>
+                                        <div className="comment-bubble">
+                                            <div className="comment-meta">
+                                                <span className="comment-author">{c.user_id.nickname}</span>
+                                                <span className="comment-time">{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                            <div className="comment-text">{c.content}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {comments.length === 0 && (
+                                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>还没有讨论，发一条吧</p>
                                 )}
+                            </div>
+                            <div className="comment-input-area">
+                                <input className="comment-input" placeholder="说点什么..." 
+                                    value={newComment} onChange={(e) => setNewComment(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
+                                />
+                                <button className="comment-send-btn" onClick={handleSendComment}>🚀</button>
                             </div>
                         </div>
                     </div>
+                ) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>活动数据加载中...</div>
                 )}
             </div>
         </div>
