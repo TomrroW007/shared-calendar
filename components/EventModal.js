@@ -9,9 +9,43 @@ const STATUS_OPTIONS = [
     { value: 'tentative', label: '❓ 待定', className: 'status-tentative' },
 ];
 
+const VIBE_EMOJIS = ['🏃', '🍕', '🎮', '💼', '✈️', '😴', '💪', '🍺', '📚', '🏠', '🔥'];
+
 export default function EventModal({ date, event, members, currentUser, onClose, onSave, onDelete, onRSVP }) {
     // Mode logic: New event -> Edit mode; Existing event -> View mode
     const [isEditing, setIsEditing] = useState(!event?.id);
+
+    // Vibe State
+    const [vibeEmoji, setVibeEmoji] = useState('');
+    const [vibeText, setVibeText] = useState('');
+
+    useEffect(() => {
+        const myMember = members.find(m => m.id === currentUser?.id);
+        const existingVibe = myMember?.daily_statuses?.[date] || myMember?.daily_statuses?.get?.(date);
+        if (existingVibe) {
+            setVibeEmoji(existingVibe.emoji || '');
+            setVibeText(existingVibe.text || '');
+        } else {
+            setVibeEmoji('');
+            setVibeText('');
+        }
+    }, [date, members, currentUser]);
+
+    const handleSaveVibe = async (emoji, text) => {
+        try {
+            await fetch('/api/users/me/status', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ date, emoji, text })
+            });
+            // Refresh parent state implicitly through refresh? 
+            // In a real app, we might want a callback here. 
+            // For now, let's just close or update local state
+        } catch (e) { console.error(e); }
+    };
 
     // Roles
     const isCreator = !event?.id || event.user_id === currentUser?.id;
@@ -230,6 +264,25 @@ export default function EventModal({ date, event, members, currentUser, onClose,
                         )}
                     </h2>
                     <button className="modal-close" onClick={onClose}>✕</button>
+                </div>
+
+                {/* Daily Vibe Picker (Social) */}
+                <div className="card" style={{ marginBottom: '20px', padding: '12px', background: 'rgba(124, 58, 237, 0.05)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-solid)', marginBottom: '8px', textTransform: 'uppercase' }}>✨ 我的今日动态</div>
+                    <div className="vibe-picker">
+                        <button className={`vibe-emoji-btn${!vibeEmoji ? ' active' : ''}`} onClick={() => { setVibeEmoji(''); handleSaveVibe('', vibeText); }}>🚫</button>
+                        {VIBE_EMOJIS.map(e => (
+                            <button key={e} className={`vibe-emoji-btn${vibeEmoji === e ? ' active' : ''}`}
+                                onClick={() => { setVibeEmoji(e); handleSaveVibe(e, vibeText); }}>{e}</button>
+                        ))}
+                    </div>
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                        <input className="input" placeholder="加句短语？(如: 开启休假, 健身中...)" 
+                            value={vibeText} onChange={(e) => setVibeText(e.target.value)}
+                            onBlur={() => handleSaveVibe(vibeEmoji, vibeText)}
+                            style={{ fontSize: '0.85rem', padding: '8px 12px' }}
+                        />
+                    </div>
                 </div>
 
                 {isEditing ? (

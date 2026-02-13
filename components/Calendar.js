@@ -28,8 +28,23 @@ function getEventsForDate(events, dateStr) {
     return events.filter((e) => e.start_date <= dateStr && e.end_date >= dateStr);
 }
 
-export default function Calendar({ year, month, events, onDateClick, onPrev, onNext, filterUserId }) {
+export default function Calendar({ year, month, events, onDateClick, onPrev, onNext, selectedUserIds = [], members = [], currentUser = null }) {
     const [holidays, setHolidays] = useState({});
+
+    // Get vibe for a specific date
+    const getVibeForDate = (dateStr) => {
+        if (!dateStr || members.length === 0) return null;
+        
+        // If one user selected, show theirs
+        if (selectedUserIds.length === 1) {
+            const user = members.find(m => m.id === selectedUserIds[0]);
+            return user?.daily_statuses?.[dateStr] || user?.daily_statuses?.get?.(dateStr) || null;
+        }
+
+        // Default: show current user's vibe if exists
+        const me = members.find(m => m.id === currentUser?.id);
+        return me?.daily_statuses?.[dateStr] || me?.daily_statuses?.get?.(dateStr) || null;
+    };
 
     // Load holidays when year/month changes
     useEffect(() => {
@@ -86,15 +101,44 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
     const totalRows = cells.length > 35 ? 6 : 5;
     const displayCells = cells.slice(0, totalRows * 7);
 
-    const filteredEvents = filterUserId
-        ? events.filter((e) => e.user_id === filterUserId)
+    // Heatmap Logic: Calculate overlap when multiple users are selected
+    const getHeatmapStyle = (dateStr) => {
+        if (!dateStr || selectedUserIds.length < 2) return {};
+
+        const dayEvents = getEventsForDate(events, dateStr);
+        const busyUsers = new Set(
+            dayEvents
+                .filter(e => selectedUserIds.includes(e.user_id) && (e.status === 'busy' || e.status === 'vacation'))
+                .map(e => e.user_id)
+        );
+
+        const freeCount = selectedUserIds.length - busyUsers.size;
+        const freeRatio = freeCount / selectedUserIds.length;
+
+        if (freeRatio === 1) {
+            return { background: 'rgba(34, 197, 94, 0.25)', border: '1px solid rgba(34, 197, 94, 0.4)' }; // All free: Deep Green
+        } else if (freeRatio >= 0.5) {
+            return { background: 'rgba(34, 197, 94, 0.1)' }; // Most free: Light Green
+        } else if (freeRatio === 0) {
+            return { background: 'rgba(239, 68, 68, 0.15)' }; // All busy: Light Red
+        }
+        return {};
+    };
+
+    const filteredEvents = selectedUserIds.length > 0
+        ? events.filter((e) => selectedUserIds.includes(e.user_id))
         : events;
 
     return (
         <div className="calendar">
             <div className="calendar-nav">
                 <button onClick={onPrev}>◂</button>
-                <h2>{year} 年 {monthNames[month]}</h2>
+                <div style={{ textAlign: 'center' }}>
+                    <h2>{year} 年 {monthNames[month]}</h2>
+                    {selectedUserIds.length > 1 && (
+                        <div style={{ fontSize: '0.65rem', color: 'var(--status-available)', fontWeight: 600 }}>对比模式：寻找共同空闲 🎯</div>
+                    )}
+                </div>
                 <button onClick={onNext}>▸</button>
             </div>
 
@@ -109,6 +153,7 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
                     const isToday = cell.dateStr === todayStr;
                     const dayEvents = cell.dateStr ? getEventsForDate(filteredEvents, cell.dateStr) : [];
                     const holiday = cell.dateStr ? holidays[cell.dateStr] : null;
+                    const heatmapStyle = cell.dateStr ? getHeatmapStyle(cell.dateStr) : {};
 
                     // Deduplicate by user to show at most one dot per user
                     const uniqueUserEvents = [];
@@ -133,6 +178,7 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
                             }}
                             disabled={cell.otherMonth}
                             title={holiday ? holiday.name : undefined}
+                            style={heatmapStyle}
                         >
                             <span className={`day-number${(isWeekend && !cell.otherMonth) ? ' weekend' : ''}`}>
                                 {cell.day}
@@ -142,6 +188,14 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
                                     {holiday.type === 'workday' ? '班' : holiday.name.length > 2 ? holiday.name.slice(0, 2) : holiday.name}
                                 </span>
                             )}
+                            
+                            {/* Daily Vibe Display */}
+                            {!cell.otherMonth && (
+                                <div className="day-vibe">
+                                    {getVibeForDate(cell.dateStr)?.emoji}
+                                </div>
+                            )}
+
                             {uniqueUserEvents.length > 0 && (
                                 <div className="day-dots">
                                     {uniqueUserEvents.slice(0, 4).map((e, i) => (

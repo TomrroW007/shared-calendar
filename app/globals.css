@@ -1212,3 +1212,36 @@ textarea.input {
   border-color: var(--border-accent);
 }
 
+
+/* ===== Daily Vibe Styles ===== */
+.day-vibe {
+  font-size: 1rem;
+  margin: 2px 0;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vibe-picker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.vibe-emoji-btn {
+  font-size: 1.5rem;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.vibe-emoji-btn.active {
+  background: rgba(124, 58, 237, 0.15);
+  border-color: var(--accent-solid);
+}
+

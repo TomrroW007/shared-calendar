@@ -39,7 +39,7 @@ export default function SpacePage() {
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth());
 
-    const [filterUserId, setFilterUserId] = useState(null);
+    const [selectedUserIds, setSelectedUserIds] = useState([]); // Array for multi-select
     const [selectedDate, setSelectedDate] = useState(null);
     const [editingEvent, setEditingEvent] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -49,6 +49,13 @@ export default function SpacePage() {
     const [calendarMode, setCalendarMode] = useState('month'); // 'month' or 'agenda'
 
     const getToken = () => localStorage.getItem('token');
+
+    const toggleUserFilter = (uid) => {
+        setSelectedUserIds(prev => {
+            if (prev.includes(uid)) return prev.filter(id => id !== uid);
+            return [...prev, uid];
+        });
+    };
 
     const getEmojiForNote = (note = '') => {
         const text = note.toLowerCase();
@@ -429,16 +436,16 @@ export default function SpacePage() {
                         {/* Members filter bar */}
                         <div className="members-bar">
                             <button
-                                className={`member-chip${!filterUserId ? ' active' : ''}`}
-                                onClick={() => setFilterUserId(null)}
+                                className={`member-chip${selectedUserIds.length === 0 ? ' active' : ''}`}
+                                onClick={() => setSelectedUserIds([])}
                             >
                                 👥 所有人
                             </button>
                             {members.map((m) => (
                                 <button
                                     key={m.id}
-                                    className={`member-chip${filterUserId === m.id ? ' active' : ''}`}
-                                    onClick={() => setFilterUserId(filterUserId === m.id ? null : m.id)}
+                                    className={`member-chip${selectedUserIds.includes(m.id) ? ' active' : ''}`}
+                                    onClick={() => toggleUserFilter(m.id)}
                                 >
                                     <span
                                         className="avatar avatar-sm"
@@ -475,14 +482,16 @@ export default function SpacePage() {
                                 year={year}
                                 month={month}
                                 events={events}
-                                filterUserId={filterUserId}
+                                selectedUserIds={selectedUserIds}
+                                members={members}
+                                currentUser={currentUser}
                                 onDateClick={handleDateClick}
                                 onPrev={handlePrevMonth}
                                 onNext={handleNextMonth}
                             />
                         ) : (
                             <div className="agenda-view">
-                                {events.filter(e => !filterUserId || e.user_id === filterUserId)
+                                {events.filter(e => selectedUserIds.length === 0 || selectedUserIds.includes(e.user_id))
                                     .sort((a, b) => a.start_date.localeCompare(b.start_date))
                                     .map(evt => (
                                         <div key={evt.id} className="event-item" onClick={() => { setEditingEvent(evt); setShowModal(true); }}>

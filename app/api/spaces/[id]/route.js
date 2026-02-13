@@ -31,7 +31,9 @@ export async function GET(request, { params }) {
         const members = membersRefs.map(m => ({
             id: m.user_id._id.toString(),
             nickname: m.user_id.nickname,
-            avatar_color: m.user_id.avatar_color
+            avatar_color: m.user_id.avatar_color,
+            role: m.role,
+            daily_statuses: m.user_id.daily_statuses || {}
         }));
 
         return NextResponse.json({

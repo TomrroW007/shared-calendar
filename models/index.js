@@ -24,7 +24,19 @@ const UserSchema = new mongoose.Schema({
         name: { type: String, default: 'External Calendar' },
         color: { type: String, default: '#333' },
         last_synced: { type: Date }
-    }]
+    }],
+
+    // Daily Vibe / Status (Social)
+    // Map: { "YYYY-MM-DD": { emoji: "🏃", text: "开始减肥" } }
+    daily_statuses: {
+        type: Map,
+        of: new mongoose.Schema({
+            emoji: String,
+            text: String,
+            updated_at: { type: Date, default: Date.now }
+        }, { _id: false }),
+        default: {}
+    }
 });
 
 export const User = mongoose.models.User || mongoose.model('User', UserSchema);
