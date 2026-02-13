@@ -97,13 +97,15 @@ const EventSchema = new mongoose.Schema({
     start_at: { type: Date }, // 精确开始时间 (UTC)
     end_at: { type: Date },   // 精确结束时间 (UTC)
     is_all_day: { type: Boolean, default: true },
-    status: { type: String, enum: ['busy', 'vacation', 'available', 'tentative'], required: true },
+    status: { type: String, enum: ['busy', 'vacation', 'available', 'tentative', 'ghost'], required: true },
     note: { type: String, default: '' },
     location: { type: String, default: '' },
     visibility: { type: String, enum: ['public', 'private', 'status_only'], default: 'public' },
     recurrence_rule: { type: String, default: null }, // RRule 字符串
     timezone: { type: String, default: 'UTC' },
     participants: [ParticipantSchema],
+    // Ghost Mode: Users who showed interest
+    interested_users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     created_at: { type: Date, default: Date.now },
 });
 
@@ -134,6 +136,19 @@ const NotificationSchema = new mongoose.Schema({
 });
 
 export const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
+
+// Space Note / Wiki Schema
+const SpaceNoteSchema = new mongoose.Schema({
+    space_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Space', required: true },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true },
+    content: { type: String, default: '' }, // Markdown content
+    attachments: [{ type: String }],
+    updated_at: { type: Date, default: Date.now },
+    created_at: { type: Date, default: Date.now },
+});
+
+export const SpaceNote = mongoose.models.SpaceNote || mongoose.model('SpaceNote', SpaceNoteSchema);
 
 // Proposal Schema (StateMachine)
 const VoteSchema = new mongoose.Schema({

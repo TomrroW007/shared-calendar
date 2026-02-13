@@ -7,6 +7,7 @@ const STATUS_OPTIONS = [
     { value: 'busy', label: '💼 忙碌', className: 'status-busy' },
     { value: 'available', label: '✅ 可约', className: 'status-available' },
     { value: 'tentative', label: '❓ 待定', className: 'status-tentative' },
+    { value: 'ghost', label: '👻 想去(Ghost)', className: 'status-ghost' },
 ];
 
 const RECURRENCE_OPTIONS = [
@@ -18,10 +19,25 @@ const RECURRENCE_OPTIONS = [
 
 const VIBE_EMOJIS = ['🏃', '🍕', '🎮', '💼', '✈️', '😴', '💪', '🍺', '📚', '🏠', '🔥'];
 
+import { parseQuickAddCommand } from '@/lib/nlp';
+
 export default function EventModal({ date, event, events = [], members, currentUser, onClose, onSave, onDelete, onRSVP }) {
     // Mode logic: New event -> Edit mode; Existing event -> View mode
     const [isEditing, setIsEditing] = useState(!event?.id);
     const [activeTab, setActiveTab] = useState('details');
+    const [nlpInput, setNlpInput] = useState('');
+
+    const handleNlpParse = () => {
+        if (!nlpInput.trim()) return;
+        const result = parseQuickAddCommand(nlpInput);
+        if (result.date) {
+            setStartDate(result.date);
+            setEndDate(result.date);
+        }
+        if (result.title) setNote(result.title); // Using note as title for now
+        // Location support can be added to model later
+        setNlpInput('');
+    };
 
     // Form State
     const [startDate, setStartDate] = useState(date);
@@ -318,12 +334,31 @@ export default function EventModal({ date, event, events = [], members, currentU
 
     const otherMembers = (members || []).filter(m => m.id !== currentUser?.id);
 
+    const handleInterest = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/spaces/${window.location.pathname.split('/').pop()}/events/${event.id}/interest`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                // Optimistic update logic would be here or rely on parent refresh
+                onClose(); // Close for now or refresh
+            }
+        } catch (e) { console.error(e); }
+        setLoading(false);
+    };
+
+    const isGhost = event?.status === 'ghost';
+    const amInterested = event?.interested_users?.includes(currentUser?.id);
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header" style={{ marginBottom: '12px' }}>
                     <h2>
-                        {event?.id ? (isEditing ? '编辑活动' : '活动详情') : '发起活动'}
+                        {event?.id ? (isEditing ? '编辑活动' : (isGhost ? '👻 意向详情' : '活动详情')) : '发起活动'}
                     </h2>
                     <button className="modal-close" onClick={onClose}>✕</button>
                 </div>
@@ -337,6 +372,23 @@ export default function EventModal({ date, event, events = [], members, currentU
                             onClick={() => setActiveTab('comments')}>
                             讨论 {comments.length > 0 && <span className="comment-count">{comments.length}</span>}
                         </button>
+                    </div>
+                )}
+
+                {/* NLP Quick Add (New Event Only) */}
+                {isEditing && !event?.id && activeTab === 'details' && (
+                    <div className="input-group" style={{ marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input 
+                                className="input" 
+                                style={{ background: 'rgba(124, 58, 237, 0.05)', borderColor: 'var(--accent-solid)' }}
+                                placeholder="✨ 试试：明晚7点在老地方聚餐" 
+                                value={nlpInput} 
+                                onChange={(e) => setNlpInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleNlpParse()}
+                            />
+                            <button className="btn btn-primary btn-sm" onClick={handleNlpParse}>识别</button>
+                        </div>
                     </div>
                 )}
 
@@ -496,25 +548,43 @@ export default function EventModal({ date, event, events = [], members, currentU
                                     </div>
                                 </div>
 
-                                {/* RSVP Section (For Participants) */}
-                                {isParticipant && (
-                                    <div className="card" style={{ padding: '16px', background: 'var(--bg-hover)', marginBottom: '20px' }}>
-                                        <h3 style={{ fontSize: '0.9rem', marginBottom: '12px' }}>你的回复</h3>
-                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                                            <button className={`btn btn-sm ${rsvpStatus === 'accepted' ? 'btn-primary' : 'btn-secondary'}`}
-                                                onClick={() => handleRSVP('accepted')} disabled={loading} style={{ flex: 1 }}>✅ 参加</button>
-                                            <button className={`btn btn-sm ${rsvpStatus === 'declined' ? 'btn-primary' : 'btn-secondary'}`}
-                                                onClick={() => handleRSVP('declined')} disabled={loading} style={{ flex: 1 }}>❌ 拒绝</button>
-                                            <button className={`btn btn-sm ${rsvpStatus === 'tentative' ? 'btn-primary' : 'btn-secondary'}`}
-                                                onClick={() => handleRSVP('tentative')} disabled={loading} style={{ flex: 1 }}>⏳ 待定</button>
+                                {/* Ghost Mode Interest Interaction */}
+                                {isGhost ? (
+                                    <div className="card" style={{ padding: '16px', background: 'var(--bg-hover)', marginBottom: '20px', textAlign: 'center' }}>
+                                        <div style={{ marginBottom: '12px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                            这是一个“幽灵意向”活动。如果你也想去，点击下方按钮。
                                         </div>
-                                        <div className="input-group" style={{ marginBottom: 0 }}>
-                                            <input className="input" placeholder="留言（可选）..." value={rsvpComment}
-                                                onChange={(e) => setRsvpComment(e.target.value)}
-                                                onBlur={() => { if (rsvpStatus !== 'pending') handleRSVP(rsvpStatus); }}
-                                            />
-                                        </div>
+                                        <button 
+                                            className={`ghost-interest-btn${amInterested ? ' active' : ''}`} 
+                                            onClick={handleInterest}
+                                            style={{ margin: '0 auto', width: 'fit-content' }}
+                                            disabled={loading}
+                                        >
+                                            {amInterested ? '👻 已感兴趣' : '👻 我感兴趣'}
+                                            <span>{event.interested_users?.length || 0}</span>
+                                        </button>
                                     </div>
+                                ) : (
+                                    /* RSVP Section (For Participants) - Normal Events */
+                                    isParticipant && (
+                                        <div className="card" style={{ padding: '16px', background: 'var(--bg-hover)', marginBottom: '20px' }}>
+                                            <h3 style={{ fontSize: '0.9rem', marginBottom: '12px' }}>你的回复</h3>
+                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                                <button className={`btn btn-sm ${rsvpStatus === 'accepted' ? 'btn-primary' : 'btn-secondary'}`}
+                                                    onClick={() => handleRSVP('accepted')} disabled={loading} style={{ flex: 1 }}>✅ 参加</button>
+                                                <button className={`btn btn-sm ${rsvpStatus === 'declined' ? 'btn-primary' : 'btn-secondary'}`}
+                                                    onClick={() => handleRSVP('declined')} disabled={loading} style={{ flex: 1 }}>❌ 拒绝</button>
+                                                <button className={`btn btn-sm ${rsvpStatus === 'tentative' ? 'btn-primary' : 'btn-secondary'}`}
+                                                    onClick={() => handleRSVP('tentative')} disabled={loading} style={{ flex: 1 }}>⏳ 待定</button>
+                                            </div>
+                                            <div className="input-group" style={{ marginBottom: 0 }}>
+                                                <input className="input" placeholder="留言（可选）..." value={rsvpComment}
+                                                    onChange={(e) => setRsvpComment(e.target.value)}
+                                                    onBlur={() => { if (rsvpStatus !== 'pending') handleRSVP(rsvpStatus); }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )
                                 )}
 
                                 {/* Participants List */}

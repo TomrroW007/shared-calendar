@@ -9,6 +9,7 @@ import NotificationBell from '@/components/NotificationBell';
 import ProposalList from '@/components/ProposalList';
 import UpcomingEvents from '@/components/UpcomingEvents';
 import FAB from '@/components/FAB';
+import SpaceWiki from '@/components/SpaceWiki';
 import { useSSE, requestNotificationPermission } from '@/components/useSSE';
 
 const STATUS_LABELS = {
@@ -44,6 +45,7 @@ export default function SpacePage() {
     const [selectedDate, setSelectedDate] = useState(null);
     const [editingEvent, setEditingEvent] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showWiki, setShowWiki] = useState(false);
     const [showFreeOnly, setShowFreeOnly] = useState(false);
     const [toast, setToast] = useState('');
     const [activeTab, setActiveTab] = useState('calendar');
@@ -459,8 +461,12 @@ export default function SpacePage() {
                             ))}
                         </div>
 
-                        {/* View Switcher */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                        {/* View Switcher & Toolbox */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <div className="space-toolbox">
+                                <button className="tool-btn" title="空间文件" onClick={() => showToast('文件柜功能即将上线...')}>📁</button>
+                                <button className="tool-btn" title="空间Wiki" onClick={() => setShowWiki(true)}>📝</button>
+                            </div>
                             <div className="select-group" style={{ gridTemplateColumns: 'repeat(2, 80px)', gap: '4px' }}>
                                 <button className={`select-option btn-sm ${calendarMode === 'month' ? 'active' : ''}`}
                                     onClick={() => setCalendarMode('month')} style={{ padding: '4px' }}>月历</button>
@@ -576,6 +582,14 @@ export default function SpacePage() {
                     onSave={handleSaveEvent}
                     onDelete={handleDeleteEvent}
                     onRSVP={handleRSVP}
+                />
+            )}
+
+            {/* Space Wiki Modal */}
+            {showWiki && (
+                <SpaceWiki 
+                    spaceId={spaceId} 
+                    onClose={() => setShowWiki(false)} 
                 />
             )}
 
