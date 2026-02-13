@@ -28,18 +28,34 @@ export async function GET(request) {
             space_id: { $in: spaceIds },
             start_date: { $lte: todayStr },
             end_date: { $gte: todayStr }
-        }).populate('space_id', 'name').populate('user_id', 'nickname avatar_color').lean();
+        }).populate('space_id', 'name settings').populate('user_id', 'nickname avatar_color').lean();
 
-        const result = events.map(e => ({
-            id: e._id.toString(),
-            space_name: e.space_id?.name || 'Unknown Space',
-            space_id: e.space_id?._id.toString(),
-            nickname: e.user_id?.nickname,
-            avatar_color: e.user_id?.avatar_color,
-            note: e.note,
-            status: e.status,
-            is_all_day: e.is_all_day
-        }));
+        const result = events.map(e => {
+            const isMine = e.user_id?._id.toString() === user._id.toString();
+            const spacePrivacy = e.space_id?.settings?.default_privacy || 'busy_only';
+            
+            let hideDetails = false;
+            if (e.visibility === 'private' && !isMine) {
+                hideDetails = true;
+            } else if (spacePrivacy === 'busy_only' && !isMine) {
+                hideDetails = true;
+            }
+
+            const effectiveNote = (hideDetails || e.visibility === 'status_only') 
+                ? (e.status === 'available' ? 'Available' : 'Busy') 
+                : e.note;
+
+            return {
+                id: e._id.toString(),
+                space_name: e.space_id?.name || 'Unknown Space',
+                space_id: e.space_id?._id.toString(),
+                nickname: e.user_id?.nickname,
+                avatar_color: e.user_id?.avatar_color,
+                note: effectiveNote,
+                status: e.status,
+                is_all_day: e.is_all_day
+            };
+        });
 
         return NextResponse.json({ events: result });
     } catch (error) {

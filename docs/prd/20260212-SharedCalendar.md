@@ -3,14 +3,17 @@
 ## 背景与目标
 
 ### 1.1 背景
+
 [原内容保留]
 
 ### 1.2 目标
+
 [原内容保留]
 
 ## 用户与使用场景
 
 建议补充 3 个 Top 场景：
+
 - 家庭协调
 - 小队活动
 - 临时聚会
@@ -20,16 +23,19 @@
 ### 3.1 已实现（Current）
 
 核心功能已实现：
+
 - [功能列表]
 
 ### 3.2 下一个版本 v1.2（Committed）
 
 Dashboard/Agenda/Memo/Emoji 计划：
+
 - [功能列表]
 
 ### 3.3 Backlog（Future / Research）
 
 调研阶段的高/中/低优先级功能：
+
 - [功能列表]
 
 ### 3.4 非目标（Non-goals）
@@ -60,6 +66,7 @@ Dashboard/Agenda/Memo/Emoji 计划：
 ### SSE 实时同步
 
 采用 Server-Sent Events 实现准实时同步：
+
 - **刷新语义**：状态变化立即推送
 - **断线重连**：自动重新连接
 - **消息一致性**：确保消息不重复消费
@@ -69,6 +76,7 @@ Dashboard/Agenda/Memo/Emoji 计划：
 详见 docs/testing/acceptance-criteria.md
 
 主要验收点：
+
 - 匿名注册与持久化
 - Space 创建与邀请码加入
 - 月视图与隐私可见性

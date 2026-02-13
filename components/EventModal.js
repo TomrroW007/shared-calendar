@@ -145,7 +145,7 @@ export default function EventModal({ date, event, events = [], members, currentU
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({ date, emoji, text })
+                body: JSON.stringify({ date: startDate, emoji, text })
             });
         } catch (e) { console.error(e); }
     };

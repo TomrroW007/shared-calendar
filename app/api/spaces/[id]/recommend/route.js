@@ -17,6 +17,12 @@ export async function GET(request, { params }) {
         const user = await authenticate(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        // Verify requester is a member of the space
+        const isMember = await SpaceMember.findOne({ space_id: spaceId, user_id: user._id });
+        if (!isMember) {
+            return NextResponse.json({ error: 'Forbidden: You must be a member of this space' }, { status: 403 });
+        }
+
         // 1. Get all members of the space
         const members = await SpaceMember.find({ space_id: spaceId }).select('user_id');
         const memberIds = members.map(m => m.user_id.toString());
