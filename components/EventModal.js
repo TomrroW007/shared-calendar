@@ -16,6 +16,8 @@ const RECURRENCE_OPTIONS = [
     { value: 'monthly', label: '每月' },
 ];
 
+const VIBE_EMOJIS = ['🏃', '🍕', '🎮', '💼', '✈️', '😴', '💪', '🍺', '📚', '🏠', '🔥'];
+
 export default function EventModal({ date, event, events = [], members, currentUser, onClose, onSave, onDelete, onRSVP }) {
     // Mode logic: New event -> Edit mode; Existing event -> View mode
     const [isEditing, setIsEditing] = useState(!event?.id);
@@ -32,6 +34,48 @@ export default function EventModal({ date, event, events = [], members, currentU
     // Vibe State
     const [vibeEmoji, setVibeEmoji] = useState('');
     const [vibeText, setVibeText] = useState('');
+
+    // Smart Date Parsing
+    const handleNoteChange = (e) => {
+        const val = e.target.value;
+        setNote(val);
+
+        // Scan for keywords if we are in "Create/Edit" mode (isEditing)
+        // Only trigger if the note is short (likely typing a quick command)
+        if (isEditing && val.length < 20) {
+            const now = new Date();
+            let target = null;
+
+            if (val.includes('明天')) {
+                target = new Date(now); target.setDate(now.getDate() + 1);
+            } else if (val.includes('后天')) {
+                target = new Date(now); target.setDate(now.getDate() + 2);
+            } else if (val.includes('今天')) {
+                target = new Date(now);
+            } else if (val.match(/周[一二三四五六日]/)) {
+                const map = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '日': 0 };
+                const match = val.match(/周([一二三四五六日])/);
+                if (match) {
+                    const day = map[match[1]];
+                    const currentDay = now.getDay();
+                    let diff = day - currentDay;
+                    if (diff <= 0) diff += 7; // Next occurrence
+                    target = new Date(now); target.setDate(now.getDate() + diff);
+                }
+            }
+
+            if (target) {
+                const yyyy = target.getFullYear();
+                const mm = String(target.getMonth() + 1).padStart(2, '0');
+                const dd = String(target.getDate()).padStart(2, '0');
+                const str = `${yyyy}-${mm}-${dd}`;
+                if (startDate !== str) {
+                    setStartDate(str);
+                    setEndDate(str);
+                }
+            }
+        }
+    };
 
     // Conflict Detection (Client-side)
     const [conflictInfo, setConflictInfo] = useState(null);
