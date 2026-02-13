@@ -565,6 +565,7 @@ export default function SpacePage() {
                 <EventModal
                     date={selectedDate}
                     event={editingEvent}
+                    events={events} // Pass all events for conflict detection
                     members={members}
                     currentUser={currentUser}
                     onClose={() => { setShowModal(false); setEditingEvent(null); }}

@@ -1,0 +1,35 @@
+{
+  "servers": {
+    // 文件系统访问（核心 MCP）
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ]
+    },
+
+    // Python 语言服务器（代码分析、重构、语法检查）
+    "pylance": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@vscode/pylance-mcp"]
+    }
+
+    // 可选：E2E 测试与自动化
+    // "playwright": {
+    //   "type": "stdio",
+    //   "command": "npx",
+    //   "args": ["-y", "@playwright/mcp"]
+    // }
+
+    // 可选：容器与 Docker 管理
+    // "docker": {
+    //   "type": "stdio",
+    //   "command": "docker",
+    //   "args": ["mcp"]
+    // }
+  }
+}

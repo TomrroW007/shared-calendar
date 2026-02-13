@@ -1,23 +1,28 @@
-# Pull Request
+## Summary
+- What changed?
 
-## 描述
-请简要描述此 PR 的改动。
+## Related
+- PRD: docs/prd/20260212-SharedCalendar.md
+- ADR: (if any) docs/adr/...
+- Diagrams: docs/architecture/diagrams/...
 
-## 相关 Issue
-关联的 Issue 链接或编号。
+## Changes
+- [ ] Feature
+- [ ] Fix
+- [ ] Refactor
+- [ ] Docs
+- [ ] Tests
 
-## 变更类型
-- [ ] Bug 修复
-- [ ] 新功能
-- [ ] 文件/结构变更
-- [ ] 依赖更新
-- [ ] 文档更新
+## Verification
+Steps to verify:
+1.
+2.
 
-## 测试方式
-如何测试这些变更？
+## Risk & Rollback
+- Risks:
+- Rollback plan:
 
-## 检查清单
-- [ ] 代码已自测
-- [ ] 文档已更新
-- [ ] 没有引入 breaking changes
-- [ ] 相关测试已添加或更新
+## Checklist
+- [ ] Updated docs (PRD/ADR/diagrams/testing) if behavior changed
+- [ ] Added/updated tests for critical behavior
+- [ ] No privacy/permission regression

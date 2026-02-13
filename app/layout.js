@@ -13,6 +13,7 @@ export const viewport = {
 };
 
 import PushManager from '@/components/PushManager';
+import CommandPalette from '@/components/CommandPalette';
 
 export default function RootLayout({ children }) {
     return (
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
             <body>
                 {children}
                 <PushManager />
+                <CommandPalette />
             </body>
         </html>
     );

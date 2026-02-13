@@ -1245,3 +1245,218 @@ textarea.input {
   border-color: var(--accent-solid);
 }
 
+
+/* ===== Event Modal Tabs ===== */
+.modal-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.modal-tab {
+  padding: 8px 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  position: relative;
+  transition: all 0.2s;
+}
+
+.modal-tab.active {
+  color: var(--accent-solid);
+}
+
+.modal-tab.active::after {
+  content: \"\";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-solid);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.comment-count {
+  font-size: 0.7rem;
+  background: var(--bg-hover);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.comment-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Status select styles */
+select.input.status-vacation { color: var(--status-vacation); }
+select.input.status-busy { color: var(--status-busy); }
+select.input.status-available { color: var(--status-available); }
+select.input.status-tentative { color: var(--status-tentative); }
+
+
+/* ===== Command Palette (Linear Style) ===== */
+.cmd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  padding-top: 15vh;
+}
+
+.cmd-content {
+  width: 100%;
+  max-width: 600px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  height: fit-content;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+}
+
+.cmd-icon {
+  font-size: 1.2rem;
+  opacity: 0.5;
+}
+
+.cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  outline: none;
+}
+
+.cmd-shortcut {
+  background: var(--bg-hover);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.cmd-list {
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.cmd-group-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.cmd-item:hover {
+  background: var(--bg-hover);
+}
+
+.cmd-item-icon {
+  font-size: 1rem;
+}
+
+.cmd-item-name {
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+.cmd-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cmd-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.cmd-footer {
+  padding: 10px 16px;
+  background: var(--bg-glass);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 16px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Recommend Button & List */
+.recommend-area {
+  margin-bottom: 16px;
+}
+
+.recommend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--accent-solid);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border-accent);
+  transition: all 0.2s;
+}
+
+.recommend-badge:hover {
+  transform: scale(1.05);
+  background: rgba(124, 58, 237, 0.2);
+}
+
+.recommend-list {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+.recommend-item {
+  background: var(--bg-hover);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.recommend-item:hover {
+  border-color: var(--status-available);
+}
+

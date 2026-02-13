@@ -1,25 +1,12 @@
-# 流程图生成提示
+你是产品 + 工程双角色。
+基于 PRD（docs/prd/20260212-SharedCalendar.md），生成两张 Mermaid 图：
+1) 核心用户活动流程（flowchart）
+2) SSE 同步时序（sequenceDiagram）
 
-用于生成 Mermaid 流程图和时序图的 AI 提示模板。
-
-## Mermaid 流程图模板
-
-```
-graph TD
-    A[开始] --> B{决策点}
-    B -->|是| C[流程A]
-    B -->|否| D[流程B]
-    C --> E[结束]
-    D --> E
-```
-
-## Mermaid 时序图模板
-
-```
-sequenceDiagram
-    participant A as 用户
-    participant B as 系统
-    A->>B: 请求
-    B->>B: 处理
-    B->>A: 响应
-```
+要求：
+- 图必须可直接渲染
+- 节点命名清晰
+- 覆盖：Space、Calendar、Proposal、Vote、Confirm、SSE、Notification
+输出文件：
+- docs/architecture/diagrams/flow-activity.md
+- docs/architecture/diagrams/sequence-sync.md

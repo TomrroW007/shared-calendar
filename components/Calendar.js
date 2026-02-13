@@ -182,6 +182,9 @@ export default function Calendar({ year, month, events, onDateClick, onPrev, onN
                         >
                             <span className={`day-number${(isWeekend && !cell.otherMonth) ? ' weekend' : ''}`}>
                                 {cell.day}
+                                {dayEvents.some(e => e.recurrence_rule) && !cell.otherMonth && (
+                                    <span style={{ fontSize: '0.6rem', marginLeft: '2px', opacity: 0.7 }} title="包含重复事件">↻</span>
+                                )}
                             </span>
                             {holiday && !cell.otherMonth && (
                                 <span className={`holiday-label ${holiday.type}`}>

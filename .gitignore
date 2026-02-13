@@ -3,3 +3,6 @@ node_modules/
 data/
 *.db
 .env*.local
+
+# VS Code 个人配置
+.vscode/settings.json

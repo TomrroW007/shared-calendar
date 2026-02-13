@@ -1,27 +1,10 @@
-# 架构决策记录 (ADR) 生成提示
+你是架构师 + 资深工程师。
+基于：
+- PRD：docs/prd/20260212-SharedCalendar.md
+- 当前实现：Next.js Route Handlers + MongoDB + SSE
 
-用于生成架构决策记录的 AI 提示模板。
-
-## 模板内容
-
-```markdown
-# ADR-XXXX: [决策标题]
-
-## 状态
-[提议/已接受/已弃用/已替代]
-
-## 背景
-[做这个决策的背景和原因]
-
-## 决策
-[具体的决策]
-
-## 后果
-[正面和负面的后果]
-
-## 替代方案
-[考虑过的其他方案]
-
-## 相关链接
-[相关文档和链接]
-```
+任务：
+1) 识别本次需求/实现中的“关键决策点”（例如：SSE vs WebSocket、MongoDB schema 设计、离线策略）
+2) 为每个决策点生成 ADR 草案（含：Context/Decision/Options/Consequences）
+输出：
+- 以 docs/adr/ADR-xxxx-*.md 的可提交内容形式给出
