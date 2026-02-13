@@ -8,6 +8,7 @@ import EventModal from '@/components/EventModal';
 import NotificationBell from '@/components/NotificationBell';
 import ProposalList from '@/components/ProposalList';
 import UpcomingEvents from '@/components/UpcomingEvents';
+import FAB from '@/components/FAB';
 import { useSSE, requestNotificationPermission } from '@/components/useSSE';
 
 const STATUS_LABELS = {
@@ -559,6 +560,9 @@ export default function SpacePage() {
                     <ProposalList />
                 )}
             </div>
+
+            {/* Floating Action Button */}
+            <FAB onClick={() => { setSelectedDate(new Date().toISOString().split('T')[0]); setEditingEvent(null); setShowModal(true); }} />
 
             {/* Event Modal */}
             {showModal && (

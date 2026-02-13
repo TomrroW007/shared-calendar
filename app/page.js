@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import FAB from '@/components/FAB';
 
 export default function HomePage() {
     const [spaces, setSpaces] = useState([]);
@@ -17,6 +18,13 @@ export default function HomePage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [toast, setToast] = useState('');
     const router = useRouter();
+
+    // Listen for global command palette events
+    useEffect(() => {
+        const handleOpenCreate = () => setShowCreate(true);
+        window.addEventListener('open-create-space', handleOpenCreate);
+        return () => window.removeEventListener('open-create-space', handleOpenCreate);
+    }, []);
 
     const getToken = () => localStorage.getItem('token');
 
@@ -197,16 +205,13 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* Bottom Actions */}
-            <div className="bottom-actions">
-                <div className="container">
-                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setShowCreate(true)}>
-                        ＋ 创建空间
-                    </button>
-                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowJoin(true)}>
-                        🔗 加入空间
-                    </button>
-                </div>
+            {/* Floating Action Button for Mobile */}
+            <FAB onClick={() => setShowCreate(true)} />
+            
+            <div style={{ textAlign: 'center', marginTop: '20px', paddingBottom: '20px' }}>
+                <button className="btn-secondary btn-sm" onClick={() => setShowJoin(true)} style={{ borderRadius: '20px' }}>
+                    🔗 输入邀请码加入空间
+                </button>
             </div>
 
             {/* Account Modal */}

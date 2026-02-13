@@ -14,6 +14,7 @@ export const viewport = {
 
 import PushManager from '@/components/PushManager';
 import CommandPalette from '@/components/CommandPalette';
+import BottomNav from '@/components/BottomNav';
 
 export default function RootLayout({ children }) {
     return (
@@ -28,9 +29,12 @@ export default function RootLayout({ children }) {
                 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
             </head>
             <body>
-                {children}
+                <div className="page-content-wrapper">
+                    {children}
+                </div>
                 <PushManager />
                 <CommandPalette />
+                <BottomNav />
             </body>
         </html>
     );
