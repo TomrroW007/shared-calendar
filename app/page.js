@@ -203,56 +203,71 @@ export default function HomePage() {
     <div className="page" style={{ position: "relative" }}>
       {/* Background Aurora Blobs are handled in globals.css */}
 
-      <div className="container" style={{ paddingBottom: '100px' }}>
+      <div className="container" style={{ paddingBottom: "100px" }}>
         <header
           className="page-header"
-          style={{ justifyContent: "space-between", padding: "40px 0" }}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px 0 40px",
+            borderBottom: "1px solid rgba(6,182,212,0.1)",
+            marginBottom: "20px",
+          }}
         >
-          <div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <h1
               className="gradient-text"
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "2.5rem",
+                fontSize: "2rem",
                 fontWeight: "900",
                 letterSpacing: "-0.02em",
-                marginBottom: "8px",
+                marginBottom: "4px",
+                lineHeight: "1",
               }}
             >
               PULSE RADAR
             </h1>
-            {user && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Radar size={14} className="text-cyan-500 animate-spin-slow" />
               <p
                 style={{
-                  color: "var(--cosmic-cyan)",
-                  fontSize: "0.9rem",
+                  color: "rgba(6,182,212,0.8)",
+                  fontSize: "0.75rem",
                   fontWeight: "500",
                   fontFamily: "var(--font-tech)",
-                  letterSpacing: "0.05em",
+                  letterSpacing: "0.1em",
                   textTransform: "uppercase",
+                  textShadow: "0 0 5px rgba(6,182,212,0.4)",
                 }}
               >
-                Synchronizing lives, not managing time
+                TACTICAL DATA STREAM
               </p>
-            )}
+            </div>
           </div>
+
           {user && (
             <motion.div
-              whileHover={{ scale: 1.08 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="avatar"
               style={{
                 background: user.avatar_color,
                 cursor: "pointer",
-                width: "40px",
-                height: "40px",
-                fontSize: "0.95rem",
-                border: "2px solid rgba(6,182,212,0.5)",
-                boxShadow:
-                  "0 0 16px rgba(6,182,212,0.3), inset 0 0 8px rgba(6,182,212,0.1)",
+                width: "48px",
+                height: "48px",
+                fontSize: "1rem",
+                border: "1px solid var(--accent-cyan)",
+                boxShadow: "0 0 16px rgba(6,182,212,0.2)",
                 clipPath:
-                  "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                  "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)", // Hexagon
                 borderRadius: "0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontWeight: "bold",
               }}
               onClick={() => setShowAccount(true)}
             >
@@ -267,9 +282,28 @@ export default function HomePage() {
             <div className="mobile-only" style={{ marginBottom: "32px" }}>
               <CosmicCard corners={false} style={{ padding: 0 }}>
                 <div style={{ padding: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                    <Zap size={20} style={{ color: "#facc15", filter: "drop-shadow(0 0 8px rgba(250,204,21,0.6))" }} />
-                    <h3 className="holo-text" style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <Zap
+                      size={20}
+                      style={{
+                        color: "#facc15",
+                        filter: "drop-shadow(0 0 8px rgba(250,204,21,0.6))",
+                      }}
+                    />
+                    <h3
+                      className="holo-text"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "1.1rem",
+                      }}
+                    >
                       我的状态
                     </h3>
                   </div>
@@ -282,45 +316,11 @@ export default function HomePage() {
             </div>
             {/* ================================================= */}
 
-            {/* V3.2 Social Pulse Timeline Section */}
+            {/* V3.4 Pulse Radar Stream Section */}
             <section
-              className="dashboard-section"
-              style={{ marginBottom: "40px" }}
+              className="pulse-stream-section"
+              style={{ position: "relative", minHeight: "60vh" }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  marginBottom: "24px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "4px",
-                    height: "24px",
-                    background: "var(--cosmic-cyan)",
-                    borderRadius: "2px",
-                    boxShadow: "0 0 10px var(--cosmic-cyan)",
-                  }}
-                />
-                <Activity
-                  size={20}
-                  className="text-cyan-400"
-                  style={{ flexShrink: 0 }}
-                />
-                <h3
-                  className="holo-text"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "1.25rem",
-                    fontWeight: "700",
-                  }}
-                >
-                  社交脉搏
-                </h3>
-              </div>
-
               <PulseTimeline
                 events={todayEvents}
                 members={[]}

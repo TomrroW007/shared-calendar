@@ -1,0 +1,142 @@
+
+/* ===== Pulse Radar v2.0 Components ===== */
+
+/* The Time Beam */
+.time-beam {
+  position: absolute;
+  left: 48px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--beam-color) 10%,
+    var(--beam-color) 90%,
+    transparent 100%
+  );
+  box-shadow: var(--beam-glow);
+  z-index: 10;
+}
+
+/* Scanner Line Animation */
+.scanner-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--cosmic-cyan);
+  box-shadow: 0 0 15px var(--cosmic-cyan);
+  opacity: 0.3;
+  z-index: 5;
+  pointer-events: none;
+  animation: radar-scan 8s linear infinite;
+}
+
+@keyframes radar-scan {
+  0% { transform: translateY(-10vh); opacity: 0; }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+/* Data Node (Event Card) */
+.data-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 64px; /* Right of beam */
+  padding: 12px 16px;
+  background: var(--node-bg);
+  border: 1px solid var(--node-border);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.data-node:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--cosmic-cyan);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+}
+
+.data-node::before {
+  /* Dashed Connector */
+  content: "";
+  position: absolute;
+  left: -16px; /* Connect to beam area */
+  top: 50%;
+  width: 16px;
+  height: 1px;
+  border-bottom: 2px dotted var(--beam-color);
+  opacity: 0.5;
+}
+
+/* Beam Ticks */
+.beam-tick {
+  position: absolute;
+  left: 44px; /* On beam line (48px center - 4px) */
+  width: 10px; /* circle diameter */
+  height: 10px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-primary);
+  border: 2px solid var(--beam-color);
+  z-index: 20;
+}
+
+.beam-tick.tick-now {
+  width: 14px;
+  height: 14px;
+  background: var(--cosmic-cyan);
+  box-shadow: 0 0 12px var(--cosmic-cyan);
+  border: none;
+  animation: pulse-dot 2s infinite;
+}
+
+.beam-tick.tick-event {
+  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow-purple);
+}
+
+.beam-tick.tick-empty {
+  width: 6px;
+  height: 6px;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: transparent;
+}
+
+@keyframes pulse-dot {
+  0% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 0.7; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* Holo-Dock (Bottom Nav) enhancements */
+.holo-dock {
+  background: rgba(3, 0, 20, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  border-top: 1px solid transparent !important;
+  border-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent-cyan),
+      var(--accent-primary),
+      transparent
+    ) 1 !important;
+  padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+}
+
+/* Frequency Header Typography */
+.freq-title {
+  font-family: var(--font-tech);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}

@@ -28,14 +28,10 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="mobile-bottom-nav"
+      className="mobile-bottom-nav holo-dock"
       style={{
         padding: "0 20px",
         gap: "4px",
-        background: "rgba(3,0,20,0.75)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderTop: "none",
         position: "relative",
       }}
     >
@@ -53,6 +49,9 @@ export default function BottomNav() {
               justifyContent: "center",
             }}
           >
+            {isActive && (
+              <div className="absolute inset-0 bg-cyan-500/10 blur-xl rounded-full transform scale-50" />
+            )}
             <span
               className="nav-icon"
               style={{
@@ -61,6 +60,9 @@ export default function BottomNav() {
                 color: isActive
                   ? "var(--cosmic-cyan)"
                   : "var(--text-secondary)",
+                filter: isActive
+                  ? "drop-shadow(0 0 8px var(--cosmic-cyan))"
+                  : "none",
               }}
             >
               {item.icon}
@@ -73,6 +75,7 @@ export default function BottomNav() {
                 zIndex: 2,
                 opacity: isActive ? 1 : 0.5,
                 color: isActive ? "var(--cosmic-cyan)" : "inherit",
+                marginTop: "4px",
               }}
             >
               {item.label}

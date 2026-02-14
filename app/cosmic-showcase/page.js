@@ -171,8 +171,8 @@ export default function CosmicShowcase() {
               lineHeight: "1.7",
             }}
           >
-            This is regular body text using Inter Tight font. It's optimized for
-            readability on dark cosmic backgrounds.
+            This is regular body text using Inter Tight font. It&apos;s
+            optimized for readability on dark cosmic backgrounds.
           </p>
 
           <p

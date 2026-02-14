@@ -26,6 +26,77 @@
   --font-sans: "Inter Tight", "Inter", system-ui, sans-serif;
   --font-display: "Space Grotesk", "Orbitron", system-ui, sans-serif;
   --font-tech: "Rajdhani", "Orbitron", monospace;
+
+  /* Pulse Radar v2.0 Vars */
+  --beam-color: rgba(6, 182, 212, 0.6); /* Cyan */
+  --beam-glow: 0 0 8px rgba(6, 182, 212, 0.4);
+  --node-bg: rgba(255, 255, 255, 0.04);
+  --node-border: rgba(6, 182, 212, 0.2);
+  --scanner-line: rgba(6, 182, 212, 0.3);
+}
+
+/* Pulse Radar Component Classes */
+.time-beam {
+  position: absolute;
+  left: 48px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--beam-color) 10%,
+    var(--beam-color) 90%,
+    transparent 100%
+  );
+  box-shadow: var(--beam-glow);
+  z-index: 0;
+}
+
+.data-node {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-left: 64px; /* 光束右侧 */
+  background: var(--node-bg);
+  border: 1px solid var(--node-border);
+  border-radius: 12px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.data-node:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent-cyan);
+  box-shadow: var(--beam-glow);
+}
+
+.data-node::before {
+  /* Dashed Connector */
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  width: 16px;
+  height: 1px;
+  border-top: 1px dashed var(--beam-color);
+  opacity: 0.6;
+}
+
+.holo-dock {
+  background: rgba(3, 0, 20, 0.7);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent-cyan),
+      var(--accent-primary),
+      transparent
+    )
+    1;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
 body {
@@ -2481,27 +2552,13 @@ select.input.status-tentative {
   }
 }
 
-/* Holo-Dock (Bottom Nav) Refactored */
-.holo-dock {
-  background: rgba(3, 0, 20, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid transparent;
-  padding: 0 20px;
-  padding-bottom: env(safe-area-inset-bottom, 20px);
-  height: calc(64px + env(safe-area-inset-bottom, 0px));
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+/* Holo-Dock Enhancement for Bottom Nav */
+.mobile-bottom-nav {
+  border-top: none !important;
+  border-image: none !important;
 }
 
-.holo-dock::before {
+.mobile-bottom-nav::before {
   content: "";
   position: absolute;
   top: 0;
@@ -2511,265 +2568,157 @@ select.input.status-tentative {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--cosmic-cyan) 20%,
-    var(--cosmic-purple) 50%,
-    var(--cosmic-cyan) 80%,
+    var(--cosmic-cyan) 30%,
+    var(--cosmic-purple) 70%,
     transparent 100%
   );
-  opacity: 0.8;
-  box-shadow: 0 0 10px var(--cosmic-cyan);
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  position: relative;
-  flex: 1;
-  height: 100%;
-  color: var(--text-muted);
-  transition: color 0.3s ease;
-}
-
-.nav-item.active {
-  color: var(--cosmic-cyan);
-}
-
-.nav-icon {
-  z-index: 2;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-item.active .nav-icon {
-  transform: translateY(-2px);
-  filter: drop-shadow(0 0 8px var(--accent-glow-cyan));
-}
-
-.nav-label {
-  font-family: var(--font-tech);
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   opacity: 0.6;
-  z-index: 2;
-  transition: all 0.3s;
 }
 
-.nav-item.active .nav-label {
-  opacity: 1;
-  color: var(--cosmic-cyan);
-  text-shadow: 0 0 8px var(--accent-glow-cyan);
-}
-
-@media (min-width: 1024px) {
-  .holo-dock {
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
     display: none !important;
   }
 }
 
-/* --- Desktop Sidebar --- */
-.desktop-sidebar {
-  display: none;
-  flex-direction: column;
-  width: 280px;
-  height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-right: 1px solid rgba(6, 182, 212, 0.2);
-  padding: 32px 20px;
-  z-index: 40;
-}
+/* ===== Pulse Radar v2.0 Components ===== */
 
-@media (min-width: 1024px) {
-  .desktop-sidebar {
-    display: flex;
-  }
-}
-
-.sidebar-header {
-  margin-bottom: 48px;
-  padding: 0 12px;
-}
-
-.sidebar-title {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.sidebar-divider {
-  width: 32px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--cosmic-purple), var(--cosmic-cyan));
-  margin-top: 8px;
-  border-radius: 2px;
-  box-shadow: 0 0 12px var(--cosmic-cyan);
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 20px;
-  border-radius: 16px;
-  color: var(--text-muted);
-  font-family: var(--font-tech);
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid transparent;
-  text-transform: uppercase;
-  font-size: 0.9rem;
-}
-
-.sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-secondary);
-}
-
-.sidebar-item-active {
-  background: rgba(6, 182, 212, 0.08); /* changed from .1 to match design */
-  color: var(--cosmic-cyan) !important;
-  border-color: rgba(6, 182, 212, 0.3);
-  box-shadow:
-    0 0 20px rgba(6, 182, 212, 0.15),
-    inset 0 0 12px rgba(6, 182, 212, 0.05);
-  font-weight: 800;
-}
-
-/* --- Pulse Page Header --- */
-.pulse-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 40px 0 24px;
-}
-
-.pulse-title {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  margin-bottom: 8px;
-  background: linear-gradient(180deg, #fff 0%, var(--text-secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.pulse-subtitle {
-  color: var(--cosmic-cyan);
-  font-family: var(--font-tech);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.9;
-}
-
-.pulse-avatar {
-  background: var(--bg-card);
-  cursor: pointer;
-  width: 42px;
-  height: 42px;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  border: 2px solid rgba(6, 182, 212, 0.5);
-  box-shadow:
-    0 0 16px rgba(6, 182, 212, 0.3),
-    inset 0 0 8px rgba(6, 182, 212, 0.1);
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  transition: transform 0.2s;
-}
-
-.pulse-avatar:hover {
-  transform: scale(1.08);
-}
-
-.pulse-avatar:active {
-  transform: scale(0.95);
-}
-
-/* --- Pulse Timeline Utility --- */
-.time-beam-day {
-  margin-bottom: 28px;
-}
-
-.time-beam-day-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding-left: 12px;
-}
-
-.sidebar-footer-tip {
-  margin-top: auto;
-  padding: 12px;
-}
-
-.sidebar-tip-card {
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 24px;
-  border: 1px solid var(--glass-stroke);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  position: relative;
-  overflow: hidden;
-}
-
-.sidebar-tip-bg {
+/* The Time Beam */
+.time-beam {
   position: absolute;
+  left: 48px;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  bottom: 0;
+  width: 2px;
   background: linear-gradient(
-    135deg,
-    rgba(168, 85, 247, 0.05) 0%,
+    to bottom,
+    transparent 0%,
+    var(--beam-color) 10%,
+    var(--beam-color) 90%,
     transparent 100%
   );
-  pointer-events: none;
+  box-shadow: var(--beam-glow);
+  z-index: 10;
 }
 
-.sidebar-tip-content {
+/* Scanner Line Animation */
+.scanner-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--cosmic-cyan);
+  box-shadow: 0 0 15px var(--cosmic-cyan);
+  opacity: 0.3;
+  z-index: 5;
+  pointer-events: none;
+  animation: radar-scan 8s linear infinite;
+}
+
+@keyframes radar-scan {
+  0% { transform: translateY(-10vh); opacity: 0; }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.5; }
+  100% { transform: translateY(110vh); opacity: 0; }
+}
+
+/* Data Node (Event Card) */
+.data-node {
   position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  margin-left: 64px; /* Right of beam */
+  padding: 12px 16px;
+  background: var(--node-bg);
+  border: 1px solid var(--node-border);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
 }
 
-.sidebar-tip-kbd {
-  background: #111;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  color: #fff;
+.data-node:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--cosmic-cyan);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+}
+
+.data-node::before {
+  /* Dashed Connector */
+  content: "";
+  position: absolute;
+  left: -16px; /* Connect to beam area */
+  top: 50%;
+  width: 16px;
+  height: 1px;
+  border-bottom: 2px dotted var(--beam-color);
+  opacity: 0.5;
+}
+
+/* Beam Ticks */
+.beam-tick {
+  position: absolute;
+  left: 44px; /* On beam line (48px center - 4px) */
+  width: 10px; /* circle diameter */
+  height: 10px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-primary);
+  border: 2px solid var(--beam-color);
+  z-index: 20;
+}
+
+.beam-tick.tick-now {
+  width: 14px;
+  height: 14px;
+  background: var(--cosmic-cyan);
+  box-shadow: 0 0 12px var(--cosmic-cyan);
+  border: none;
+  animation: pulse-dot 2s infinite;
+}
+
+.beam-tick.tick-event {
+  background: var(--bg-primary);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow-purple);
+}
+
+.beam-tick.tick-empty {
+  width: 6px;
+  height: 6px;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: transparent;
+}
+
+@keyframes pulse-dot {
+  0% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(1.3); opacity: 0.7; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* Holo-Dock (Bottom Nav) enhancements */
+.holo-dock {
+  background: rgba(3, 0, 20, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  border-top: 1px solid transparent !important;
+  border-image: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent-cyan),
+      var(--accent-primary),
+      transparent
+    ) 1 !important;
+  padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+}
+
+/* Frequency Header Typography */
+.freq-title {
   font-family: var(--font-tech);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
 }

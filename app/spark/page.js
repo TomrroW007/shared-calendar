@@ -159,7 +159,7 @@ export default function SparkPage() {
                 lineHeight: "1",
               }}
             >
-              What's the vibe?
+              What&apos;s the vibe?
             </h1>
             <p
               className="font-tech"
@@ -250,9 +250,7 @@ export default function SparkPage() {
                 ? "rgba(6,182,212,0.15)"
                 : "rgba(255,255,255,0.04)",
               border: `1px solid ${
-                ghostMode
-                  ? "rgba(6,182,212,0.4)"
-                  : "rgba(255,255,255,0.06)"
+                ghostMode ? "rgba(6,182,212,0.4)" : "rgba(255,255,255,0.06)"
               }`,
               color: ghostMode ? "var(--cosmic-cyan)" : "var(--text-muted)",
               cursor: "pointer",
@@ -273,9 +271,7 @@ export default function SparkPage() {
                 background: ghostMode
                   ? "var(--cosmic-cyan)"
                   : "rgba(255,255,255,0.15)",
-                boxShadow: ghostMode
-                  ? "0 0 8px var(--cosmic-cyan)"
-                  : "none",
+                boxShadow: ghostMode ? "0 0 8px var(--cosmic-cyan)" : "none",
                 transition: "all 0.2s",
               }}
             />
@@ -288,9 +284,7 @@ export default function SparkPage() {
               fontFamily: "var(--font-tech)",
             }}
           >
-            {ghostMode
-              ? "对方只会看到模糊的意向信号"
-              : "正常发送火花"}
+            {ghostMode ? "对方只会看到模糊的意向信号" : "正常发送火花"}
           </span>
         </div>
 

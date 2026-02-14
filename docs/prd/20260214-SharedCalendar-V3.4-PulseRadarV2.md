@@ -16,11 +16,11 @@
 
 ## 1. 问题分析 (Critique)
 
-| 问题                     | 原因                                                                                   | 影响                           |
-| :----------------------- | :------------------------------------------------------------------------------------- | :----------------------------- |
-| **大色块廉价感**         | Timeline 被包裹在 `CosmicCard` 内，形成巨大的紫蓝渐变方块，占据 70% 屏幕却无信息       | 像未加载完的 PPT                |
-| **失去 HUD 精致感**      | 大圆角、粗字体、实心块的组合偏离了科幻 HUD 风格                                          | 看起来像普通儿童应用            |
-| **空间浪费**             | 0:00–4:00 等空闲时段占据大量空间，展示一片虚空                                          | 关键信息被挤到需要滚动的位置    |
+| 问题                | 原因                                                                             | 影响                         |
+| :------------------ | :------------------------------------------------------------------------------- | :--------------------------- |
+| **大色块廉价感**    | Timeline 被包裹在 `CosmicCard` 内，形成巨大的紫蓝渐变方块，占据 70% 屏幕却无信息 | 像未加载完的 PPT             |
+| **失去 HUD 精致感** | 大圆角、粗字体、实心块的组合偏离了科幻 HUD 风格                                  | 看起来像普通儿童应用         |
+| **空间浪费**        | 0:00–4:00 等空闲时段占据大量空间，展示一片虚空                                   | 关键信息被挤到需要滚动的位置 |
 
 ## 2. 重构方案
 
@@ -42,12 +42,14 @@
 - **NOW 标记**: 当前时间点右侧显示 `NOW` 发光徽章
 - **智能压缩**: 连续空闲时段被压缩为一行 (e.g. `00:00 — 06:00 · 6h 空闲`)
 - **空状态 — 雷达扫描动画**: 若当天无任何事件，展示一个 `SCANNING FREQUENCIES...` 动画卡片（带扫描条 CSS 动画），取代空白虚空
+- **实时扫描线 (New)**: 在时间轴背景增加一条周期性垂直扫描的激光线 (Scanner Line)，增强"雷达"隐喻。
 
 ### 2.2 Frequency Header (频率顶栏)
 
 **移除**: 顶部孤零零的绿色方块头像 + 纯文字标题。
 
 **新增**:
+
 - 标题保持 "PULSE RADAR"，但以更紧凑的 HUD 方式排列
 - 用户头像改为**六边形轮廓**或带发光描边的小型头像，置于标题行右侧
 - 副标题使用 tech 字体的扫描线文字效果
@@ -57,6 +59,7 @@
 **移除**: 底部导航的纯黑背景。
 
 **新增**:
+
 - 底栏使用更强的玻璃态效果 (`backdrop-filter: blur(20px)`)
 - 顶部边框改为连续的渐变发光线
 - 选中图标增加径向辉光 (Radial Glow)
@@ -79,14 +82,16 @@
 ```
 
 **关键 CSS 变量 (新增到 globals.css)**:
+
 ```css
---beam-color: rgba(6, 182, 212, 0.6);       /* 光束颜色 (Cyan) */
+--beam-color: rgba(6, 182, 212, 0.6); /* 光束颜色 (Cyan) */
 --beam-glow: 0 0 8px rgba(6, 182, 212, 0.4); /* 光束发光 */
---node-bg: rgba(255, 255, 255, 0.04);        /* 数据节点背景 */
---node-border: rgba(6, 182, 212, 0.2);       /* 数据节点边框 */
+--node-bg: rgba(255, 255, 255, 0.04); /* 数据节点背景 */
+--node-border: rgba(6, 182, 212, 0.2); /* 数据节点边框 */
 ```
 
 **光束线的 CSS 实现**:
+
 ```css
 .time-beam {
   position: absolute;
@@ -106,13 +111,14 @@
 ```
 
 **数据节点的样式**:
+
 ```css
 .data-node {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  margin-left: 64px;   /* 光束右侧 */
+  margin-left: 64px; /* 光束右侧 */
   background: var(--node-bg);
   border: 1px solid var(--node-border);
   border-radius: 12px;
@@ -135,19 +141,19 @@ function compressTimeline(events, hours) {
   let emptyStart = null;
 
   for (const hour of hours) {
-    const hasEvents = events.some(e => getHour(e) === hour);
+    const hasEvents = events.some((e) => getHour(e) === hour);
     if (hasEvents) {
       if (emptyStart !== null) {
-        result.push({ type: 'gap', from: emptyStart, to: hour - 1 });
+        result.push({ type: "gap", from: emptyStart, to: hour - 1 });
         emptyStart = null;
       }
-      result.push({ type: 'hour', hour, events: getEventsAt(hour) });
+      result.push({ type: "hour", hour, events: getEventsAt(hour) });
     } else {
       if (emptyStart === null) emptyStart = hour;
     }
   }
   if (emptyStart !== null) {
-    result.push({ type: 'gap', from: emptyStart, to: 23 });
+    result.push({ type: "gap", from: emptyStart, to: 23 });
   }
   return result;
 }
@@ -161,19 +167,24 @@ function compressTimeline(events, hours) {
   backdrop-filter: blur(20px);
   border-top: 1px solid transparent;
   border-image: linear-gradient(
-    90deg, transparent, var(--accent-cyan), var(--accent-primary), transparent
-  ) 1;
+      90deg,
+      transparent,
+      var(--accent-cyan),
+      var(--accent-primary),
+      transparent
+    )
+    1;
 }
 ```
 
 ## 4. 文件修改清单
 
-| 文件 | 操作 | 说明 |
-| :--- | :--- | :--- |
-| `components/PulseTimeline.js` | **重写** | 水平滚动 → 垂直光束时间轴，智能时段压缩 |
-| `app/page.js` | **修改** | 移除 CosmicCard 包裹，重构顶部 header 布局 |
-| `components/BottomNav.js` | **修改** | 增强玻璃态效果，渐变发光顶部边框 |
-| `app/globals.css` | **新增规则** | time-beam、data-node、holo-dock 相关样式 |
+| 文件                          | 操作         | 说明                                       |
+| :---------------------------- | :----------- | :----------------------------------------- |
+| `components/PulseTimeline.js` | **重写**     | 水平滚动 → 垂直光束时间轴，智能时段压缩    |
+| `app/page.js`                 | **修改**     | 移除 CosmicCard 包裹，重构顶部 header 布局 |
+| `components/BottomNav.js`     | **修改**     | 增强玻璃态效果，渐变发光顶部边框           |
+| `app/globals.css`             | **新增规则** | time-beam、data-node、holo-dock 相关样式   |
 
 ## 5. 验收标准
 
