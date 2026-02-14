@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "dotenv": "^17.2.4",
+    "framer-motion": "^12.34.0",
+    "lucide-react": "^0.563.0",
     "mongoose": "^9.2.0",
     "next": "^15.1.0",
     "node-ical": "^0.25.1",

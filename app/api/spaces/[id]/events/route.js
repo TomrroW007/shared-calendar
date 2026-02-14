@@ -16,6 +16,7 @@ function serializeEvent(eventDoc, user) {
         end_date: eventDoc.end_date,
         status: eventDoc.status,
         note: eventDoc.note,
+        location: eventDoc.location, // Added
         visibility: eventDoc.visibility,
         participants: eventDoc.participants?.map((p) => p.userId?.toString() || p.userId) || [],
         participant_details: [],

@@ -187,6 +187,24 @@ export default function SpacePage() {
         else setMonth(month + 1);
     }, [month, year]);
 
+    const handleIgniteSpark = async (eventId) => {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate([15, 30, 15]);
+        }
+        try {
+            const res = await fetch(`/api/spaces/${spaceId}/events/${eventId}/ignite`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${getToken()}` },
+            });
+            if (res.ok) {
+                showToast('🔥 火花已点燃！');
+                fetchEvents();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     const handleDateClick = (dateStr) => {
         setSelectedDate(dateStr);
         const myEvent = events.find(

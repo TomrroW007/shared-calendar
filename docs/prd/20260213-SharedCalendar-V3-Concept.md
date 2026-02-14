@@ -82,17 +82,18 @@
 **设计核心理念：Liquid Interface (流体界面)。**
 告别传统日历的网格（Grid）限制，采用圆角、卡片堆叠和动态模糊（Blur）效果，打造一种"有机生命体"的视觉感受，强调状态的流动而非时间的分割。
 
-### 4.1 全局设计规范 (Design System)
+### 4.1 全局设计规范 (Design System - Hotfix 20260213)
 
+- **核心原则**: 在纯黑背景 (#050505) 上，灰度文本亮度绝对不低于 40% (Zinc-400)。
 - **配色 (Color Palette)**:
-  - **背景**: Deep Void (#0A0A0A) - 纯黑背景以突显多彩内容 (OLED 友好)。
-  - **主色**: Neon Lavendar (#B692F6) - 用于确认按钮和高亮。
-  - **状态色**:
-    - 🔥 High Energy: Electric Orange (#FF6B00)
-    - 🔋 Low Battery: Muted Teal (#4FD1C5) - 低饱和度
-    - 👻 Ghost Mode: Transparent White (Opacity 30% + Dashed Border)
-- **字体**: Inter (系统UI) + Editorial New (用于标题和情感化文案)。
-- **物理材质**: 玻璃拟态 (Glassmorphism) 用于浮层，模拟 iOS 实时模糊。
+  - **背景 (Background)**: Deep Void (#050505)。
+  - **主标题 (Primary Text)**: Zinc-100 (#EDEDED)。
+  - **次级文案 (Body)**: Zinc-400 (#A1A1AA) - 关键修复色。
+  - **辅助文案 (Muted)**: Zinc-500 (#71717A) - 用于时间轴、输入提示。
+  - **主按钮 (Primary Action)**: Bg: #B692F6 (Neon Lavendar), Text: #000000 (极高对比度)。
+  - **次级按钮 (Ghost/Card)**: Zinc-900 背景，带 Zinc-800 边框。
+- **字体**: Inter (系统UI)。
+- **物理材质**: 玻璃拟态 (Glassmorphism) 仅用于特定浮层，增强对比而非降低可见度。
 
 ### 4.2 核心界面流程 (Key Screen Flows)
 

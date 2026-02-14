@@ -18,16 +18,21 @@ export async function GET(request) {
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
         // 1. Find all spaces user is in
         const memberships = await SpaceMember.find({ user_id: user._id });
         const spaceIds = memberships.map(m => m.space_id);
 
-        // 2. Fetch events from these spaces for today
+        // 2. Fetch events from these spaces for today and tomorrow
         const events = await Event.find({
             space_id: { $in: spaceIds },
-            start_date: { $lte: todayStr },
-            end_date: { $gte: todayStr }
+            $or: [
+                { start_date: { $lte: todayStr }, end_date: { $gte: todayStr } },
+                { start_date: { $lte: tomorrowStr }, end_date: { $gte: tomorrowStr } }
+            ]
         }).populate('space_id', 'name settings').populate('user_id', 'nickname avatar_color').lean();
 
         const result = events.map(e => {
@@ -53,7 +58,10 @@ export async function GET(request) {
                 avatar_color: e.user_id?.avatar_color,
                 note: effectiveNote,
                 status: e.status,
-                is_all_day: e.is_all_day
+                is_all_day: e.is_all_day,
+                start_date: e.start_date,
+                start_at: e.start_at,
+                title: e.title
             };
         });
 

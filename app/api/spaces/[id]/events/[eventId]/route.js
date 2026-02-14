@@ -90,6 +90,7 @@ export async function PUT(request, { params }) {
         event.end_date = body.end_date || event.end_date;
         event.status = body.status || event.status;
         event.note = body.note !== undefined ? body.note : event.note;
+        event.location = body.location !== undefined ? body.location : event.location; // Added
         event.visibility = body.visibility || event.visibility;
 
         if (body.participants) {

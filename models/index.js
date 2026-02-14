@@ -1,24 +1,40 @@
 import mongoose from 'mongoose';
 
-// User Schema
+// User Schema (v3.0 Fluid Social Organism)
 const UserSchema = new mongoose.Schema({
     nickname: { type: String, required: true },
     token: { type: String, required: true, unique: true },
     avatar_color: { type: String, default: '#666' },
     created_at: { type: Date, default: Date.now },
 
-    // Push Notifications (Multiple devices)
+    // Social Battery & Vibe (v3.0 Neural)
+    social_battery: {
+        level: { type: Number, default: 100, min: 0, max: 100 },
+        status: { type: String, enum: ['active', 'recharging'], default: 'active' },
+        last_updated: { type: Date, default: Date.now }
+    },
+    current_vibe: {
+        status: { type: String, enum: ['focus', 'chill', 'party', 'ghost'], default: 'chill' },
+        text: String,
+        updated_at: { type: Date, default: Date.now }
+    },
+
+    // AI & Recommendations
+    interests: [String], // e.g., ["hiking", "coffee"]
+    embedding: [Number], // For Vector Search
+
+    // Push Notifications
     push_subscriptions: [{
         endpoint: String,
         keys: {
             p256dh: String,
             auth: String
         },
-        ua: String, // User Agent for debugging
+        ua: String,
         created_at: { type: Date, default: Date.now }
     }],
 
-    // External Calendars (Read-Only)
+    // External Calendars
     ics_urls: [{
         url: { type: String, required: true },
         name: { type: String, default: 'External Calendar' },
@@ -26,8 +42,7 @@ const UserSchema = new mongoose.Schema({
         last_synced: { type: Date }
     }],
 
-    // Daily Vibe / Status (Social)
-    // Map: { "YYYY-MM-DD": { emoji: "🏃", text: "开始减肥" } }
+    // Daily Vibe / Status (Legacy compatibility)
     daily_statuses: {
         type: Map,
         of: new mongoose.Schema({
@@ -45,7 +60,7 @@ export const User = mongoose.models.User || mongoose.model('User', UserSchema);
 const SpaceSchema = new mongoose.Schema({
     name: { type: String, required: true },
     invite_code: { type: String },
-    memo: { type: String, default: '' }, // 空间公告/长期备忘
+    memo: { type: String, default: '' },
     settings: {
         default_privacy: { type: String, enum: ['busy_only', 'details'], default: 'busy_only' },
         allow_guest_vote: { type: Boolean, default: true }
@@ -54,15 +69,9 @@ const SpaceSchema = new mongoose.Schema({
     created_at: { type: Date, default: Date.now },
 });
 
-// sparse: true allows multiple null values without violating uniqueness
 SpaceSchema.index({ invite_code: 1 }, { unique: true, sparse: true });
 
-// Prevent infinite loop by forcing model recompilation in dev
-// (Otherwise cached model without invite_code schema treats findOne({invite_code}) as findOne({}))
-if (mongoose.models.Space) {
-    delete mongoose.models.Space;
-}
-
+if (mongoose.models.Space) delete mongoose.models.Space;
 export const Space = mongoose.model('Space', SpaceSchema);
 
 // Space Member Schema
@@ -72,19 +81,15 @@ const SpaceMemberSchema = new mongoose.Schema({
     role: { type: String, enum: ['owner', 'admin', 'editor', 'viewer', 'guest'], default: 'viewer' },
     joined_at: { type: Date, default: Date.now },
 });
-// Compound index to prevent duplicate membership
 SpaceMemberSchema.index({ space_id: 1, user_id: 1 }, { unique: true });
 
-if (mongoose.models.SpaceMember) {
-    delete mongoose.models.SpaceMember;
-}
-
+if (mongoose.models.SpaceMember) delete mongoose.models.SpaceMember;
 export const SpaceMember = mongoose.model('SpaceMember', SpaceMemberSchema);
 
-// Event Schema
+// Event / Spark Schema (v3.0 Evolution)
 const ParticipantSchema = new mongoose.Schema({
     userId: { type: String },
-    status: { type: String, enum: ['pending', 'accepted', 'declined', 'tentative'], default: 'pending' },
+    status: { type: String, enum: ['invited', 'interested', 'accepted', 'declined', 'pending'], default: 'pending' },
     comment: { type: String, default: '' },
     updatedAt: { type: Date, default: Date.now }
 }, { _id: false });
@@ -92,28 +97,69 @@ const ParticipantSchema = new mongoose.Schema({
 const EventSchema = new mongoose.Schema({
     space_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Space', required: true },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    start_date: { type: String, required: true }, // 冗余用于快速索引日期
+    type: { type: String, enum: ['spark', 'event'], default: 'event' }, // spark=意向, event=正式
+    
+    start_date: { type: String, required: true },
     end_date: { type: String, required: true },
-    start_at: { type: Date }, // 精确开始时间 (UTC)
-    end_at: { type: Date },   // 精确结束时间 (UTC)
+    start_at: { type: Date },
+    end_at: { type: Date },
     is_all_day: { type: Boolean, default: true },
+    
     status: { type: String, enum: ['busy', 'vacation', 'available', 'tentative', 'ghost'], required: true },
-    note: { type: String, default: '' },
+    title: String, // Official title
+    note: { type: String, default: '' }, // Discussion/Note
     location: { type: String, default: '' },
     visibility: { type: String, enum: ['public', 'private', 'status_only'], default: 'public' },
-    recurrence_rule: { type: String, default: null }, // RRule 字符串
+    
+    recurrence_rule: { type: String, default: null },
     timezone: { type: String, default: 'UTC' },
+    
     participants: [ParticipantSchema],
-    // Ghost Mode: Users who showed interest
+    
+    // Ghost Mode & Spark
     interested_users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    
+    // The Lobby (v3.0)
+    lobby: {
+        widgets: [{
+            type: { type: String, enum: ['poll', 'playlist', 'bill_split', 'checklist'] },
+            data: mongoose.Schema.Types.Mixed,
+            updated_at: { type: Date, default: Date.now }
+        }],
+        is_active: { type: Boolean, default: false }
+    },
+    
+    // Memory Archival
+    memory_params: {
+        photos: [String],
+        summary: String,
+        vibe_score: Number
+    },
+    
     created_at: { type: Date, default: Date.now },
 });
 
 export const Event = mongoose.models.Event || mongoose.model('Event', EventSchema);
 
+// Memory Schema (v3.0 Social Assets)
+const MemorySchema = new mongoose.Schema({
+    event_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
+    users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    vibe_score: Number,
+    streak_count: Number, // 连续见面次数
+    assets: [{
+        type: { type: String, enum: ['photo', 'video_snippet', 'voice_note'] },
+        url: String,
+        created_at: { type: Date, default: Date.now }
+    }],
+    created_at: { type: Date, default: Date.now },
+});
+
+export const Memory = mongoose.models.Memory || mongoose.model('Memory', MemorySchema);
+
 // Comment Schema
 const CommentSchema = new mongoose.Schema({
-    related_id: { type: String, required: true, index: true }, // Event ID or Proposal ID
+    related_id: { type: String, required: true, index: true },
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true },
     attachments: [{ type: String }],
@@ -121,6 +167,19 @@ const CommentSchema = new mongoose.Schema({
 });
 
 export const Comment = mongoose.models.Comment || mongoose.model('Comment', CommentSchema);
+
+// Space Note / Wiki Schema
+const SpaceNoteSchema = new mongoose.Schema({
+    space_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Space', required: true },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    title: { type: String, required: true },
+    content: { type: String, default: '' },
+    attachments: [{ type: String }],
+    updated_at: { type: Date, default: Date.now },
+    created_at: { type: Date, default: Date.now },
+});
+
+export const SpaceNote = mongoose.models.SpaceNote || mongoose.model('SpaceNote', SpaceNoteSchema);
 
 // Notification Schema
 const NotificationSchema = new mongoose.Schema({
@@ -130,30 +189,17 @@ const NotificationSchema = new mongoose.Schema({
     title: { type: String, required: true },
     body: { type: String, default: '' },
     from_user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    related_id: { type: String }, // Can be Event ID or Proposal ID
+    related_id: { type: String },
     read: { type: Boolean, default: false },
     created_at: { type: Date, default: Date.now },
 });
 
 export const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
 
-// Space Note / Wiki Schema
-const SpaceNoteSchema = new mongoose.Schema({
-    space_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Space', required: true },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    title: { type: String, required: true },
-    content: { type: String, default: '' }, // Markdown content
-    attachments: [{ type: String }],
-    updated_at: { type: Date, default: Date.now },
-    created_at: { type: Date, default: Date.now },
-});
-
-export const SpaceNote = mongoose.models.SpaceNote || mongoose.model('SpaceNote', SpaceNoteSchema);
-
 // Proposal Schema (StateMachine)
 const VoteSchema = new mongoose.Schema({
     user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    guest_name: { type: String }, // For guests
+    guest_name: { type: String },
     vote: { type: String, enum: ['available', 'unavailable', 'if_need_be', 'maybe'], required: true },
     updated_at: { type: Date, default: Date.now }
 }, { _id: false });
@@ -163,30 +209,21 @@ const ProposalSchema = new mongoose.Schema({
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true },
     description: { type: String },
-
-    // Status Machine: draft -> voting -> confirmed (end) / cancelled / expired
     status: { type: String, enum: ['draft', 'voting', 'confirmed', 'cancelled', 'expired'], default: 'voting' },
-
-    // Candidates: Array of slots
     slots: [{
         start_date: { type: Date, required: true },
         end_date: { type: Date, required: true },
         votes: [VoteSchema]
     }],
-
     settings: {
         anonymous_voting: { type: Boolean, default: false },
         hide_results: { type: Boolean, default: false },
         allow_guests: { type: Boolean, default: true }
     },
-
-    final_event_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' }, // Linked event when confirmed
+    final_event_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
     created_at: { type: Date, default: Date.now },
-    expires_at: { type: Date } // Auto-expire?
+    expires_at: { type: Date }
 });
 
-if (mongoose.models.Proposal) {
-    delete mongoose.models.Proposal;
-}
-
+if (mongoose.models.Proposal) delete mongoose.models.Proposal;
 export const Proposal = mongoose.model('Proposal', ProposalSchema);
