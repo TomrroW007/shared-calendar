@@ -203,7 +203,7 @@ export default function HomePage() {
     <div className="page" style={{ position: "relative" }}>
       {/* Background Aurora Blobs are handled in globals.css */}
 
-      <div className="container">
+      <div className="container" style={{ paddingBottom: '100px' }}>
         <header
           className="page-header"
           style={{ justifyContent: "space-between", padding: "40px 0" }}
@@ -263,6 +263,25 @@ export default function HomePage() {
 
         <div className="pulse-grid">
           <div className="pulse-center">
+            {/* ======= Mobile-Only: Social Battery at Top ======= */}
+            <div className="mobile-only" style={{ marginBottom: "32px" }}>
+              <CosmicCard corners={false} style={{ padding: 0 }}>
+                <div style={{ padding: "20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+                    <Zap size={20} style={{ color: "#facc15", filter: "drop-shadow(0 0 8px rgba(250,204,21,0.6))" }} />
+                    <h3 className="holo-text" style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem" }}>
+                      我的状态
+                    </h3>
+                  </div>
+                  <VibeSlider
+                    initialLevel={battery.level}
+                    onVibeChange={(lvl, vibe) => updateBattery(lvl, vibe)}
+                  />
+                </div>
+              </CosmicCard>
+            </div>
+            {/* ================================================= */}
+
             {/* V3.2 Social Pulse Timeline Section */}
             <section
               className="dashboard-section"
@@ -660,51 +679,6 @@ export default function HomePage() {
               </CosmicCard>
             </div>
           </aside>
-        </div>
-      </div>
-
-      {/* Bottom Actions for Mobile */}
-      <div
-        className="container mobile-only"
-        style={{ marginTop: "40px", paddingBottom: "120px" }}
-      >
-        <div style={{ display: "flex", gap: "12px" }}>
-          <button
-            className="btn-secondary"
-            onClick={() => setShowJoin(true)}
-            style={{
-              flex: 1,
-              padding: "20px",
-              borderRadius: "20px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <span style={{ fontSize: "1.25rem" }}>🔗</span>
-            <span style={{ fontSize: "0.85rem", fontWeight: "700" }}>
-              加入空间
-            </span>
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => setShowCreate(true)}
-            style={{
-              flex: 1,
-              padding: "20px",
-              borderRadius: "20px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <span style={{ fontSize: "1.25rem" }}>➕</span>
-            <span style={{ fontSize: "0.85rem", fontWeight: "700" }}>
-              创建空间
-            </span>
-          </button>
         </div>
       </div>
 
