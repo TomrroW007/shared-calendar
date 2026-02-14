@@ -1,74 +1,20 @@
 "use client";
 
 import { useMemo, useEffect, useState, useCallback } from "react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-
-// Helper Tick Style Generator
-const getTickStyle = (type) => {
-  const base = {
-    position: "absolute",
-    right: "-1px" /* Align to right edge of left container, touching beam */,
-    transform: "translateY(-50%)",
-  };
-
-  switch (type) {
-    case "now":
-      return {
-        ...base,
-        width: "10px",
-        height: "10px",
-        background: "var(--accent-cyan)",
-        borderRadius: "50%",
-        boxShadow: "0 0 10px var(--accent-cyan)",
-      };
-    case "event":
-      return {
-        ...base,
-        width: "8px",
-        height: "8px",
-        background: "var(--accent-primary)",
-        borderRadius: "50%",
-        boxShadow: "0 0 8px var(--accent-primary)",
-      };
-    case "empty":
-      return {
-        ...base,
-        width: "5px",
-        height: "5px",
-        background: "rgba(6, 182, 212, 0.3)",
-        borderRadius: "50%",
-      };
-    case "dim":
-    default:
-      return {
-        ...base,
-        width: "4px",
-        height: "4px",
-        background: "rgba(255, 255, 255, 0.1)",
-        borderRadius: "50%",
-      };
-  }
-};
 
 export default function PulseTimeline({ events, members, currentUser }) {
   const [now, setNow] = useState(new Date());
 
-  // Update "NOW" every minute
   useEffect(() => {
-    // Set initial time on client side to match server/hydration
     setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
   const currentHour = now.getHours();
-  // We use local format for simple comparison for now, assuming events are in local or consistent UTC
-  // In a real app with timezones, this needs robust handling (date-fns-tz etc.)
   const todayStr = now.toISOString().split("T")[0];
 
   const processedEvents = useMemo(() => {
-    // PRD: "Tactical Data Stream" - filtering for likely relevant events
     return events.filter((e) => e.start_date === todayStr);
   }, [events, todayStr]);
 
@@ -76,14 +22,12 @@ export default function PulseTimeline({ events, members, currentUser }) {
     (hour) => {
       return processedEvents.filter((e) => {
         if (!e.start_at) return false;
-        const h = new Date(e.start_at).getHours();
-        return h === hour;
+        return new Date(e.start_at).getHours() === hour;
       });
     },
     [processedEvents],
   );
 
-  // Compressed Timeline Logic
   const timelineSegments = useMemo(() => {
     const result = [];
     let emptyStart = null;
@@ -112,46 +56,19 @@ export default function PulseTimeline({ events, members, currentUser }) {
       result.push({ type: "gap", from: emptyStart, to: 23 });
     }
     return result;
-  }, [processedEvents, currentHour, getEventsAtHour]);
-
-  if (
-    processedEvents.length === 0 &&
-    timelineSegments.length <= 1 &&
-    !timelineSegments.some((s) => s.isCurrent)
-  ) {
-    // Fallback if somehow empty
-  }
+  }, [getEventsAtHour, currentHour]);
 
   return (
-    <div className="pulse-container">
-      {/* The Time Beam - Fixed Vertical Line */}
-      <div className="time-beam" />
+    <div className="pulse-stream-container">
+      {/* 增强型战术光束 - 多层光学衰减 */}
+      <div className="time-beam-core" />
 
-      {/* Scanner Line Animation */}
-      <div className="scanner-container">
-        <motion.div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: "100%",
-            height: "150px",
-            background:
-              "linear-gradient(to bottom, transparent, var(--accent-cyan), transparent)",
-            opacity: 0.3,
-            boxShadow: "0 0 15px var(--accent-cyan)",
-          }}
-          animate={{ top: ["-20%", "120%"] }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-      </div>
+      {/* 物理级雷达扫描激光 - mix-blend-mode: color-dodge */}
+      <div className="scanner-laser" />
 
-      <div className="pulse-segments">
+      <div className="pulse-stream-content">
         {timelineSegments.map((segment, idx) => (
-          <div key={idx} className="pulse-segment">
+          <div key={idx} className="pulse-row-wrapper">
             {segment.type === "gap" ? (
               <GapSegment from={segment.from} to={segment.to} />
             ) : (
@@ -165,11 +82,20 @@ export default function PulseTimeline({ events, members, currentUser }) {
         ))}
       </div>
 
-      {/* Empty State / Bottom Filler */}
+      {/* 扫描空状态 */}
       {processedEvents.length === 0 && (
-        <div className="empty-state">
-          <RadarScan />
-          <div className="scan-text">SCANNING LOCAL FREQUENCIES...</div>
+        <div className="beam-scan-card">
+          <div className="beam-scan-laser-inner" />
+          <div className="scan-icon">◬</div>
+          <div
+            className="tech-label"
+            style={{
+              color: "var(--accent-cyan)",
+              animation: "pulse 2s infinite",
+            }}
+          >
+            SCANNING LOCAL FREQUENCIES...
+          </div>
         </div>
       )}
     </div>
@@ -178,98 +104,62 @@ export default function PulseTimeline({ events, members, currentUser }) {
 
 function GapSegment({ from, to }) {
   const duration = to - from + 1;
-  const label =
-    duration > 1
-      ? `${String(from).padStart(2, "0")}:00 — ${String(to + 1).padStart(2, "0")}:00`
-      : `${String(from).padStart(2, "0")}:00 Empty`;
+  const timeLabel = `${String(from).padStart(2, "0")}00`;
 
   return (
-    <div className="gap-segment">
-      {/* Time Label Area (Left of Beam) */}
-      <div className="gap-time">
-        {/* Hover to see start time of gap */}
-        {String(from).padStart(2, "0")}:00
-      </div>
-
-      {/* Tick on Beam */}
-      <div
-        style={{
-          position: "absolute",
-          left: "48px",
-          ...getTickStyle("dim"),
-          transform: "translate(-50%, -50%)",
-        }}
-      />
-
-      {/* Content Area (Right of Beam) */}
-      <div className="gap-content">
-        {label} · {duration}h SILENT
+    <div className="pulse-row gap-row">
+      <div className="pulse-time gap-time">{timeLabel}</div>
+      <div className="pulse-tick gap-tick" />
+      <div className="pulse-node">
+        <div className="gap-label">{duration}H SILENT MODE</div>
       </div>
     </div>
   );
 }
 
 function HourSegment({ hour, events, isCurrent }) {
-  const timeLabel = `${String(hour).padStart(2, "0")}:00`;
+  const timeLabel = `${String(hour).padStart(2, "0")}00`;
 
   return (
-    <div className="hour-segment">
-      {/* Time Label (Left) */}
-      <div className={`hour-label ${isCurrent ? "current" : "inactive"}`}>
+    <div className={`pulse-row ${isCurrent ? "is-current" : ""}`}>
+      <div className="pulse-time">
         {timeLabel}
+        {isCurrent && <div className="now-badge">NOW</div>}
       </div>
 
-      {/* Tick (On Beam) */}
       <div
-        style={{
-          position: "absolute",
-          left: "48px",
-          zIndex: 20,
-          ...getTickStyle(
-            isCurrent ? "now" : events.length > 0 ? "event" : "empty",
-          ),
-          top: "24px",
-          transform: "translate(-50%, -50%)",
-        }}
+        className={`pulse-tick ${isCurrent ? "tick-now" : events.length > 0 ? "tick-event" : "tick-empty"}`}
       >
-        {isCurrent && <div className="ping-animation"></div>}
+        {isCurrent && <div className="tick-core-ping" />}
       </div>
 
-      {/* NOW Indicator Badge */}
-      {isCurrent && <div className="now-badge">NOW</div>}
+      <div className="pulse-node-container">
+        {events.length === 0 && isCurrent && (
+          <div className="pulse-node empty-node">
+            <div className="tech-label">STANDBY</div>
+          </div>
+        )}
 
-      {/* Events List */}
-      <div className={`events-list ${isCurrent ? "with-now" : ""}`}>
         {events.map((event) => (
-          <div key={event._id} className="data-node">
-            <div style={{ flex: 1 }}>
-              <h4 className="event-title">{event.title}</h4>
-              <p className="event-time">
-                <span className="event-dot"></span>
+          <div key={event._id} className="pulse-node data-card">
+            <div className="data-card-avatar">
+              {event.title ? event.title.charAt(0) : "◭"}
+            </div>
+            <div className="data-card-content">
+              <h4 className="data-title">{event.title}</h4>
+              <p className="data-meta tech-label">
+                <span className="status-dot" />
                 {new Date(event.start_at).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                   hour12: false,
                 })}
+                {" · "}INITIATED
               </p>
-            </div>
-
-            {/* Simple decoration for the node */}
-            <div className="event-decoration">
-              <div className="event-line"></div>
             </div>
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function RadarScan() {
-  return (
-    <div className="radar-scan">
-      <div className="radar-ring"></div>
-      <div className="radar-beam"></div>
     </div>
   );
 }

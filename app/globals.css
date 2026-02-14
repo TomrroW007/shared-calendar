@@ -3027,3 +3027,334 @@ select.input.status-tentative {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 }
+
+/* =========================================================================
+   PULSE RADAR V2.0 - TACTICAL DATA STREAM EXPERIMENT
+   多层辉光渲染 + 物理级扫描线 + 高密度排版系统
+   ========================================================================= */
+
+/* --- 1. 核心布局系统 --- */
+.pulse-stream-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 100px;
+  user-select: none;
+  overflow: hidden; /* 防止扫描线溢出 */
+}
+
+/* 贯穿全局的主光束 - 多层光学衰减 */
+.time-beam-core {
+  position: absolute;
+  left: 56px; /* 固定轴线位置 */
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  /* 真实的中心白光渐变到边缘青光 */
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 10%,
+    rgba(6, 182, 212, 0.8) 50%,
+    rgba(139, 92, 246, 0.6) 90%,
+    transparent 100%
+  );
+  /* 多层光学衰减阴影 - 核心白光 -> 内层高亮 -> 外层环境光 */
+  box-shadow:
+    0 0 4px rgba(255, 255, 255, 0.5),
+    0 0 12px rgba(6, 182, 212, 0.8),
+    0 0 24px rgba(6, 182, 212, 0.4);
+  z-index: 10;
+}
+
+/* 物理级全息扫描激光 */
+.scanner-laser {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(6, 182, 212, 0.8);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.8),
+    0 0 30px 4px rgba(6, 182, 212, 0.6);
+  z-index: 50; /* 盖在卡片上方 */
+  pointer-events: none;
+  /* 关键光学属性：扫过底层元素时产生真实的高亮曝光 */
+  mix-blend-mode: color-dodge;
+  animation: radar-sweep 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes radar-sweep {
+  0%   { top: -5%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 105%; opacity: 0; }
+}
+
+/* --- 2. 信息流行 (Row) 系统 --- */
+.pulse-stream-content {
+  position: relative;
+  z-index: 20;
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pulse-row-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.pulse-row {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  min-height: 40px;
+}
+
+/* 左侧精密时间戳 */
+.pulse-time {
+  width: 44px;
+  text-align: right;
+  font-family: var(--font-tech);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  padding-top: 10px;
+  position: relative;
+}
+
+/* NOW 徽章 */
+.now-badge {
+  position: absolute;
+  top: -8px;
+  right: -28px; /* 悬挂在时间戳右上方 */
+  font-size: 9px;
+  padding: 2px 6px;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  border-radius: 4px;
+  color: #fff;
+  text-shadow: 0 0 8px var(--cosmic-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+  z-index: 30;
+}
+
+.is-current .pulse-time {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+}
+
+/* 轴上的刻度点 */
+.pulse-tick {
+  position: absolute;
+  left: 56px; /* 对齐 beam-core */
+  top: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 25;
+}
+
+.tick-empty {
+  width: 6px; height: 6px;
+  background: var(--bg-primary);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
+.tick-event {
+  width: 10px; height: 10px;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent-primary);
+  box-shadow: 0 0 12px var(--accent-glow-purple);
+}
+
+.tick-now {
+  width: 14px; height: 14px;
+  background: var(--cosmic-cyan);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+}
+
+.tick-core-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #fff;
+  animation: ping-glow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping-glow {
+  75%, 100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* --- 3. 战术数据节点 (Data Nodes) --- */
+.pulse-node-container {
+  margin-left: 32px; /* 56(轴) - 44(时间) = 12, 12 + 20(间距) = 32 */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.pulse-node {
+  position: relative;
+  padding: 12px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.3s ease;
+}
+
+/* 数据卡片的高级玻璃态 - 径向渐变模拟玻璃边缘反光 */
+.data-card {
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  /* 关键：给玻璃态加上微弱的内阴影，增加立体感 */
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.data-card:hover {
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(6, 182, 212, 0.15);
+  transform: translateX(4px);
+}
+
+/* 极致锐利的像素虚线连接器 - 使用 linear-gradient 替代模糊的 dotted */
+.pulse-node::before {
+  content: "";
+  position: absolute;
+  left: -20px; /* 连接到轴的距离 */
+  top: 12px; /* 对应第一行的高度 */
+  width: 20px;
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(6, 182, 212, 0.6) 50%, transparent 50%);
+  background-size: 4px 100%;
+  background-repeat: repeat-x;
+}
+
+/* 卡片内部元素 */
+.data-card-avatar {
+  width: 36px; height: 36px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px; /* 略微硬朗的倒角 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  font-family: var(--font-tech);
+  font-weight: 800;
+  font-size: 16px;
+  text-shadow: 0 0 10px var(--accent-glow-purple);
+}
+
+.data-card-content {
+  flex: 1;
+}
+
+.data-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.data-meta {
+  margin-top: 4px;
+}
+
+/* --- 4. 辅助视觉类 (Typography & States) --- */
+.tech-label {
+  font-family: var(--font-tech);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+}
+
+/* 间隙(压缩)行 */
+.gap-row {
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.gap-row:hover { opacity: 1; }
+.gap-time { opacity: 0; transition: opacity 0.3s; }
+.gap-row:hover .gap-time { opacity: 1; }
+
+.gap-tick {
+  width: 4px; height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+}
+
+.gap-label {
+  font-family: var(--font-tech);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.3);
+  padding-top: 11px;
+}
+
+/* 空状态 Node */
+.empty-node {
+  background: rgba(6, 182, 212, 0.03);
+  border: 1px dashed rgba(6, 182, 212, 0.2);
+  padding: 8px 12px;
+}
+
+/* 雷达空状态扫描卡片 */
+.beam-scan-card {
+  margin: 20px 0 0 68px;
+  padding: 20px;
+  background: rgba(6, 182, 212, 0.03);
+  border: 1px dashed rgba(6, 182, 212, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-icon {
+  font-size: 16px;
+  color: var(--accent-cyan);
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.beam-scan-laser-inner {
+  position: absolute;
+  top: 0; left: 0; bottom: 0; width: 40px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+  animation: inner-scan 2s ease-in-out infinite;
+}
+
+@keyframes inner-scan {
+  0% { transform: translateX(-40px); }
+  100% { transform: translateX(300px); }
+}
