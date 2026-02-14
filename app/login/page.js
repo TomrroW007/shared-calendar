@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LogIn, Key, User as UserIcon } from "lucide-react";
+import CosmicCard from "@/components/CosmicCard";
 
 export default function LoginPage() {
   const [nickname, setNickname] = useState("");
@@ -93,7 +94,7 @@ export default function LoginPage() {
           zIndex: 10,
         }}
       >
-        {/* Logo Section */}
+        {/* Logo Section - Holographic Radar Ring */}
         <div style={{ textAlign: "center", marginBottom: "3rem" }}>
           <motion.div
             animate={{ rotate: 360 }}
@@ -101,7 +102,6 @@ export default function LoginPage() {
             style={{
               display: "inline-block",
               marginBottom: "1.5rem",
-              filter: "drop-shadow(0 0 15px rgba(6,182,212,0.3))",
             }}
           >
             <div
@@ -109,22 +109,23 @@ export default function LoginPage() {
                 width: "80px",
                 height: "80px",
                 borderRadius: "50%",
-                border: "1.5px solid rgba(6,182,212,0.4)",
-                boxShadow: "0 0 20px rgba(6,182,212,0.15), inset 0 0 12px rgba(6,182,212,0.08)",
-                position: "relative",
+                border: "2px dashed var(--cosmic-cyan)",
+                boxShadow:
+                  "0 0 20px rgba(6,182,212,0.3), inset 0 0 20px rgba(6,182,212,0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <div
                 style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  fontSize: "3rem",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  background: "var(--accent-gradient)",
+                  boxShadow: "0 0 20px rgba(139,92,246,0.8)",
                 }}
-              >
-                🪐
-              </div>
+              />
             </div>
           </motion.div>
 
@@ -157,17 +158,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div
-          style={{
-            background: 'rgba(2, 6, 23, 0.9)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '20px',
-            padding: '32px',
-            boxShadow: 'inset 0 0 20px rgba(139,92,246,0.05), 0 0 40px rgba(0,0,0,0.3)',
-          }}
-        >
+        <CosmicCard>
           <form
             onSubmit={handleSubmit}
             style={{ display: "flex", flexDirection: "column", gap: "24px" }}
@@ -311,7 +302,7 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-        </div>
+        </CosmicCard>
       </motion.div>
 
       <style jsx global>{`

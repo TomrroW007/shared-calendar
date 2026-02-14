@@ -1816,89 +1816,100 @@ select.input.status-tentative {
 
 /* ===== Cosmic HUD Components (v3.3) ===== */
 
-/* Cosmic Card - Tech Glass Panel */
 .cosmic-card {
   position: relative;
-  isolation: isolate;
-}
-
-/* Animated Border Gradient — thin edge halo only */
-.cosmic-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
-  border-radius: 22px;
-  opacity: 0.3;
-  filter: blur(8px);
-  z-index: -1;
-  transition: opacity 0.3s;
-}
-
-.cosmic-card:hover::before {
-  opacity: 0.5;
-  animation: border-glow 2s ease-in-out infinite;
-}
-
-@keyframes border-glow {
-  0%,
-  100% {
-    filter: blur(4px) brightness(1);
-  }
-  50% {
-    filter: blur(6px) brightness(1.2);
-  }
-}
-
-/* Main Glass Container — near-opaque dark glass */
-.cosmic-card-content {
-  position: relative;
-  background: rgba(2, 6, 23, 0.92);
+  background: rgba(2, 6, 23, 0.6); /* Deep black glass */
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 24px;
-  overflow: hidden;
   z-index: 1;
+  box-shadow:
+    inset 0 0 20px rgba(139, 92, 246, 0.05),
+    0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
-/* Circuit Overlay Pattern */
-.cosmic-card-content::before {
+/* Core Magic: Pure 1px edge gradient using CSS Mask (hollow center) */
+.cosmic-card::before {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.05;
-  background-image:
-    linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px),
-    linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+  border-radius: 20px;
+  padding: 1px; /* Border thickness */
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+/* Extremely subtle ambient backlight (ambient halo) */
+.cosmic-card::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899);
+  filter: blur(15px);
+  opacity: 0.1; /* Keep extremely low for sci-fi feel */
+  z-index: -1;
   pointer-events: none;
 }
 
-/* HUD Corner Decorations */
+.cosmic-card:hover::before {
+  opacity: 1;
+}
+
+.cosmic-card:hover::after {
+  opacity: 0.2;
+}
+
+/* Circuit texture overlay */
+.cosmic-card-inner {
+  position: relative;
+  padding: 24px;
+  z-index: 10;
+  height: 100%;
+}
+
+.cosmic-card-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image:
+    linear-gradient(90deg, rgba(139, 92, 246, 1) 1px, transparent 1px),
+    linear-gradient(rgba(139, 92, 246, 1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+  border-radius: 20px;
+}
+
+/* HUD corner decorations remain unchanged */
 .cosmic-card-corner-tl {
   position: absolute;
   top: 0;
   left: 0;
   width: 32px;
   height: 32px;
-  border-top: 2px solid rgba(6, 182, 212, 0.5);
-  border-left: 2px solid rgba(6, 182, 212, 0.5);
-  border-top-left-radius: 12px;
-  z-index: 2;
+  border-top: 2px solid rgba(6, 182, 212, 0.8);
+  border-left: 2px solid rgba(6, 182, 212, 0.8);
+  border-top-left-radius: 20px;
+  z-index: 11;
 }
-
 .cosmic-card-corner-br {
   position: absolute;
   bottom: 0;
   right: 0;
   width: 32px;
   height: 32px;
-  border-bottom: 2px solid rgba(139, 92, 246, 0.5);
-  border-right: 2px solid rgba(139, 92, 246, 0.5);
-  border-bottom-right-radius: 12px;
-  z-index: 2;
+  border-bottom: 2px solid rgba(139, 92, 246, 0.8);
+  border-right: 2px solid rgba(139, 92, 246, 0.8);
+  border-bottom-right-radius: 20px;
+  z-index: 11;
 }
 
 /* Neon Input - Cosmic Style */
@@ -2232,7 +2243,7 @@ select.input.status-tentative {
 
 /* Halo around the beam — ambient glow */
 .time-beam-enhanced::after {
-  content: '';
+  content: "";
   position: absolute;
   left: -6px;
   top: 0;
@@ -2301,8 +2312,8 @@ select.input.status-tentative {
 .beam-tick-dim {
   width: 5px;
   height: 5px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .beam-tick-empty {
@@ -2316,7 +2327,9 @@ select.input.status-tentative {
   width: 8px;
   height: 8px;
   background: var(--accent-primary);
-  box-shadow: 0 0 8px var(--accent-primary), 0 0 16px rgba(139, 92, 246, 0.3);
+  box-shadow:
+    0 0 8px var(--accent-primary),
+    0 0 16px rgba(139, 92, 246, 0.3);
 }
 
 .beam-tick-now {
@@ -2339,7 +2352,7 @@ select.input.status-tentative {
 .beam-dash {
   width: 16px;
   height: 0;
-  border-top: 1px dashed rgba(255,255,255,0.1);
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
 }
 
@@ -2408,15 +2421,15 @@ select.input.status-tentative {
   justify-content: center;
   font-size: 0.85rem;
   font-weight: 800;
-  color: #FFF;
+  color: #fff;
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .data-node-title {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #FFF;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2460,8 +2473,12 @@ select.input.status-tentative {
 }
 
 @keyframes beam-scan {
-  0% { transform: translateX(-60px); }
-  100% { transform: translateX(calc(100vw - 60px)); }
+  0% {
+    transform: translateX(-60px);
+  }
+  100% {
+    transform: translateX(calc(100vw - 60px));
+  }
 }
 
 /* Holo-Dock Enhancement for Bottom Nav */
@@ -2471,7 +2488,7 @@ select.input.status-tentative {
 }
 
 .mobile-bottom-nav::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;

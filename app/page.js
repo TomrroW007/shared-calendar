@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Activity, Box, Zap, Radar } from "lucide-react";
 import FAB from "@/components/FAB";
 import VibeSlider from "@/components/VibeSlider";
 import PulseTimeline from "@/components/PulseTimeline";
@@ -247,8 +248,10 @@ export default function HomePage() {
                 height: "40px",
                 fontSize: "0.95rem",
                 border: "2px solid rgba(6,182,212,0.5)",
-                boxShadow: "0 0 16px rgba(6,182,212,0.3), inset 0 0 8px rgba(6,182,212,0.1)",
-                clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                boxShadow:
+                  "0 0 16px rgba(6,182,212,0.3), inset 0 0 8px rgba(6,182,212,0.1)",
+                clipPath:
+                  "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
                 borderRadius: "0",
               }}
               onClick={() => setShowAccount(true)}
@@ -282,6 +285,11 @@ export default function HomePage() {
                     boxShadow: "0 0 10px var(--cosmic-cyan)",
                   }}
                 />
+                <Activity
+                  size={20}
+                  className="text-cyan-400"
+                  style={{ flexShrink: 0 }}
+                />
                 <h3
                   className="holo-text"
                   style={{
@@ -290,7 +298,7 @@ export default function HomePage() {
                     fontWeight: "700",
                   }}
                 >
-                  ✨ 社交脉搏
+                  社交脉搏
                 </h3>
               </div>
 
@@ -319,6 +327,11 @@ export default function HomePage() {
                     boxShadow: "0 0 10px var(--cosmic-purple)",
                   }}
                 />
+                <Box
+                  size={20}
+                  className="text-purple-400"
+                  style={{ flexShrink: 0 }}
+                />
                 <h3
                   className="holo-text"
                   style={{
@@ -327,88 +340,136 @@ export default function HomePage() {
                     fontWeight: "700",
                   }}
                 >
-                  🏘️ 你的空间
+                  你的空间
                 </h3>
               </div>
 
               {spaces.length === 0 ? (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px',
-                }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                  }}
+                >
                   {/* Join Space — console button */}
                   <motion.button
-                    whileHover={{ scale: 1.03, borderColor: 'rgba(6,182,212,0.4)' }}
+                    whileHover={{
+                      scale: 1.03,
+                      borderColor: "rgba(6,182,212,0.4)",
+                    }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setShowJoin(true)}
                     style={{
-                      padding: '24px 16px',
-                      background: 'rgba(6,182,212,0.04)',
-                      border: '1px dashed rgba(6,182,212,0.2)',
-                      borderRadius: '14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '10px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      padding: "24px 16px",
+                      background: "rgba(6,182,212,0.04)",
+                      border: "1px dashed rgba(6,182,212,0.2)",
+                      borderRadius: "14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
                     }}
                   >
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '10px',
-                      background: 'rgba(6,182,212,0.1)',
-                      border: '1px solid rgba(6,182,212,0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1rem', color: 'var(--cosmic-cyan)',
-                    }}>🔗</div>
-                    <span style={{
-                      fontSize: '0.75rem', fontWeight: '700',
-                      fontFamily: 'var(--font-tech)',
-                      color: 'var(--cosmic-cyan)',
-                      letterSpacing: '0.08em',
-                    }}>加入空间</span>
-                    <span style={{
-                      fontSize: '0.55rem', color: 'var(--text-muted)',
-                      fontFamily: 'var(--font-tech)', opacity: 0.5,
-                    }}>输入邀请码</span>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "rgba(6,182,212,0.1)",
+                        border: "1px solid rgba(6,182,212,0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1rem",
+                        color: "var(--cosmic-cyan)",
+                      }}
+                    >
+                      🔗
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        fontFamily: "var(--font-tech)",
+                        color: "var(--cosmic-cyan)",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      加入空间
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.55rem",
+                        color: "var(--text-muted)",
+                        fontFamily: "var(--font-tech)",
+                        opacity: 0.5,
+                      }}
+                    >
+                      输入邀请码
+                    </span>
                   </motion.button>
 
                   {/* Create Space — console button */}
                   <motion.button
-                    whileHover={{ scale: 1.03, borderColor: 'rgba(139,92,246,0.4)' }}
+                    whileHover={{
+                      scale: 1.03,
+                      borderColor: "rgba(139,92,246,0.4)",
+                    }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setShowCreate(true)}
                     style={{
-                      padding: '24px 16px',
-                      background: 'rgba(139,92,246,0.04)',
-                      border: '1px dashed rgba(139,92,246,0.2)',
-                      borderRadius: '14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '10px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      padding: "24px 16px",
+                      background: "rgba(139,92,246,0.04)",
+                      border: "1px dashed rgba(139,92,246,0.2)",
+                      borderRadius: "14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
                     }}
                   >
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '10px',
-                      background: 'rgba(139,92,246,0.1)',
-                      border: '1px solid rgba(139,92,246,0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1rem', color: 'var(--accent-primary)',
-                    }}>✦</div>
-                    <span style={{
-                      fontSize: '0.75rem', fontWeight: '700',
-                      fontFamily: 'var(--font-tech)',
-                      color: 'var(--accent-primary)',
-                      letterSpacing: '0.08em',
-                    }}>创建空间</span>
-                    <span style={{
-                      fontSize: '0.55rem', color: 'var(--text-muted)',
-                      fontFamily: 'var(--font-tech)', opacity: 0.5,
-                    }}>新建频道</span>
+                    <div
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        background: "rgba(139,92,246,0.1)",
+                        border: "1px solid rgba(139,92,246,0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1rem",
+                        color: "var(--accent-primary)",
+                      }}
+                    >
+                      ✦
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        fontFamily: "var(--font-tech)",
+                        color: "var(--accent-primary)",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      创建空间
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "0.55rem",
+                        color: "var(--text-muted)",
+                        fontFamily: "var(--font-tech)",
+                        opacity: 0.5,
+                      }}
+                    >
+                      新建频道
+                    </span>
                   </motion.button>
                 </div>
               ) : (
@@ -491,106 +552,112 @@ export default function HomePage() {
                 gap: "24px",
               }}
             >
-              <div
-                style={{
-                  background: 'rgba(2,6,23,0.6)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  boxShadow: 'inset 0 0 20px rgba(139,92,246,0.04)',
-                }}
-              >
-                <h3
-                  className="holo-text"
-                  style={{
-                    marginBottom: "20px",
-                    fontFamily: "var(--font-display)",
-                  }}
-                >
-                  ⚡ 社交电池
-                </h3>
-                <VibeSlider
-                  initialLevel={battery.level}
-                  onVibeChange={(lvl, vibe) => updateBattery(lvl, vibe)}
-                />
-              </div>
-
-              <div
-                style={{
-                  background: 'rgba(2,6,23,0.6)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  boxShadow: 'inset 0 0 20px rgba(139,92,246,0.04)',
-                }}
-              >
-                <h3
-                  className="holo-text"
-                  style={{
-                    marginBottom: "20px",
-                    fontFamily: "var(--font-display)",
-                  }}
-                >
-                  📡 实时雷达
-                </h3>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                  }}
-                >
-                  {todayEvents.slice(0, 6).map((e) => (
-                    <div
-                      key={e.id}
+              <CosmicCard corners={false} style={{ padding: 0 }}>
+                <div style={{ padding: "20px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <Zap size={18} style={{ color: "var(--cosmic-cyan)" }} />
+                    <h3
+                      className="holo-text"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
+                        fontFamily: "var(--font-display)",
+                        fontSize: "1rem",
                       }}
                     >
+                      社交电池
+                    </h3>
+                  </div>
+                  <VibeSlider
+                    initialLevel={battery.level}
+                    onVibeChange={(lvl, vibe) => updateBattery(lvl, vibe)}
+                  />
+                </div>
+              </CosmicCard>
+
+              <CosmicCard corners={false} style={{ padding: 0 }}>
+                <div style={{ padding: "20px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      marginBottom: "20px",
+                    }}
+                  >
+                    <Radar size={18} style={{ color: "var(--cosmic-cyan)" }} />
+                    <h3
+                      className="holo-text"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "1rem",
+                      }}
+                    >
+                      实时雷达
+                    </h3>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "16px",
+                    }}
+                  >
+                    {todayEvents.slice(0, 6).map((e) => (
                       <div
-                        className="avatar avatar-sm"
+                        key={e.id}
                         style={{
-                          background: e.avatar_color,
-                          width: "32px",
-                          height: "32px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
                         }}
                       >
-                        {e.nickname?.charAt(0)}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "0.85rem", fontWeight: "700" }}>
-                          {e.nickname}
-                        </div>
                         <div
+                          className="avatar avatar-sm"
                           style={{
-                            fontSize: "0.7rem",
-                            color: "var(--text-muted)",
+                            background: e.avatar_color,
+                            width: "32px",
+                            height: "32px",
                           }}
                         >
-                          {e.note || "同步中..."}
+                          {e.nickname?.charAt(0)}
                         </div>
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{ fontSize: "0.85rem", fontWeight: "700" }}
+                          >
+                            {e.nickname}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "0.7rem",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {e.note || "同步中..."}
+                          </div>
+                        </div>
+                        {e.status === "party" && (
+                          <div
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              borderRadius: "50%",
+                              background: "var(--energy-high)",
+                              boxShadow: "0 0 8px var(--energy-high)",
+                            }}
+                          />
+                        )}
                       </div>
-                      {e.status === "party" && (
-                        <div
-                          style={{
-                            width: "6px",
-                            height: "6px",
-                            borderRadius: "50%",
-                            background: "var(--energy-high)",
-                            boxShadow: "0 0 8px var(--energy-high)",
-                          }}
-                        />
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </CosmicCard>
             </div>
           </aside>
         </div>

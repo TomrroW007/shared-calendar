@@ -3,16 +3,17 @@
 /**
  * CosmicCard - Tech-Glass Panel Component (v3.3 Cosmic HUD)
  *
- * 高科技玻璃面板，具有：
- * - 流光边框（Gradient Border with Glow）
- * - 玻璃态背景（Frosted Glass with Backdrop Blur）
- * - 电路纹理叠加（Circuit Pattern Overlay）
- * - HUD 角落装饰（Corner Decorations）
+ * Refactored with CSS Mask technology for precise 1px edge glow
+ * Features:
+ * - Pure 1px gradient border using CSS Mask (no center bleed)
+ * - Deep space glass background (transparent center)
+ * - Circuit pattern overlay
+ * - HUD corner decorations
  *
- * @param {React.ReactNode} children - 卡片内容
- * @param {string} className - 额外的 CSS 类名
- * @param {boolean} corners - 是否显示角落装饰（默认 true）
- * @param {object} style - 自定义内联样式
+ * @param {React.ReactNode} children - Card content
+ * @param {string} className - Additional CSS classes
+ * @param {boolean} corners - Show corner decorations (default true)
+ * @param {object} style - Custom inline styles
  */
 export default function CosmicCard({
   children,
@@ -22,19 +23,13 @@ export default function CosmicCard({
 }) {
   return (
     <div className={`cosmic-card ${className}`} style={style}>
-      {/* Main Glass Panel */}
-      <div className="cosmic-card-content">
-        {/* HUD Corner Decorations */}
-        {corners && (
-          <>
-            <div className="cosmic-card-corner-tl" />
-            <div className="cosmic-card-corner-br" />
-          </>
-        )}
-
-        {/* Content Layer */}
-        <div style={{ position: "relative", zIndex: 10 }}>{children}</div>
-      </div>
+      {corners && (
+        <>
+          <div className="cosmic-card-corner-tl" />
+          <div className="cosmic-card-corner-br" />
+        </>
+      )}
+      <div className="cosmic-card-inner">{children}</div>
     </div>
   );
 }
