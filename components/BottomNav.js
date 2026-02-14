@@ -3,26 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Activity, Zap, Layers } from "lucide-react";
+import { Calendar, BarChart2, CheckSquare, User } from "lucide-react";
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
     {
-      label: "Pulse",
-      icon: <Activity size={24} strokeWidth={1.5} />,
+      label: "Calendar",
+      icon: <Calendar size={24} strokeWidth={1.5} />,
       path: "/",
     },
     {
-      label: "Spark",
-      icon: <Zap size={24} strokeWidth={1.5} />,
-      path: "/spark",
+      label: "Insights",
+      icon: <BarChart2 size={24} strokeWidth={1.5} />,
+      path: "/insights",
     },
     {
-      label: "Memories",
-      icon: <Layers size={24} strokeWidth={1.5} />,
-      path: "/memories",
+      label: "Tasks",
+      icon: <CheckSquare size={24} strokeWidth={1.5} />,
+      path: "/tasks",
+    },
+    {
+      label: "Profile",
+      icon: <User size={24} strokeWidth={1.5} />,
+      path: "/profile",
     },
   ];
 

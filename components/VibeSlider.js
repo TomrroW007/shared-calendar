@@ -96,6 +96,7 @@ export default function VibeSlider({ initialLevel, onVibeChange }) {
             onTouchEnd={handleMouseUp}
             className="vibe-range-input"
             style={{
+              "--fill-level": `${level}%`,
               width: "100%",
               height: "6px",
               borderRadius: "3px",

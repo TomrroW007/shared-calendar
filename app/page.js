@@ -3,22 +3,43 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Activity, Box, Zap, Radar } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Activity,
+  Box,
+  Zap,
+  Radar,
+  Calendar as CalendarIcon,
+  Plus,
+} from "lucide-react";
 import FAB from "@/components/FAB";
 import VibeSlider from "@/components/VibeSlider";
 import PulseTimeline from "@/components/PulseTimeline";
 import CosmicCard from "@/components/CosmicCard";
+import Calendar from "@/components/Calendar";
+import PulseSummary from "@/components/PulseSummary";
+import EventModal from "@/components/EventModal";
 
 export default function HomePage() {
   const [spaces, setSpaces] = useState([]);
+  const [allEvents, setAllEvents] = useState([]); // Store all events for calendar
   const [todayEvents, setTodayEvents] = useState([]);
   const [battery, setBattery] = useState({ level: 100, status: "active" });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+
+  // Modal States
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
+
+  // Event Modal State
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
+
+  // Calendar State
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   const [newSpaceName, setNewSpaceName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -54,6 +75,10 @@ export default function HomePage() {
     async (token) => {
       try {
         const currentToken = token || getToken();
+        // In a real app, we would fetch events for the whole month.
+        // For now, reusing todayEvents endpoint or assuming it returns enough data.
+        // Ideally: fetch(`/api/events?year=${currentDate.getFullYear()}&month=${currentDate.getMonth()}`)
+
         const [spacesRes, todayRes, meRes] = await Promise.all([
           fetch("/api/spaces", {
             headers: { Authorization: `Bearer ${currentToken}` },
@@ -75,7 +100,13 @@ export default function HomePage() {
         const meData = await meRes.json();
 
         setSpaces(spacesData.spaces || []);
-        setTodayEvents(todayData.events || []);
+
+        // Mocking 'allEvents' from 'todayEvents' for demo purposes
+        // In reality, this should come from a month-range query
+        const events = todayData.events || [];
+        setTodayEvents(events);
+        setAllEvents(events);
+
         if (meData.user) {
           setUser(meData.user);
           if (meData.user.social_battery)
@@ -111,12 +142,6 @@ export default function HomePage() {
     }
   };
 
-  const getBatteryColor = (lvl) => {
-    if (lvl <= 20) return "#ef4444";
-    if (lvl <= 50) return "#f59e0b";
-    return "#22c55e";
-  };
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -133,6 +158,29 @@ export default function HomePage() {
     setTimeout(() => setToast(""), 2500);
   };
 
+  const allMembers = spaces
+    .flatMap((s) => s.members || [])
+    .reduce((acc, current) => {
+      const x = acc.find((item) => item.id === current.id);
+      return !x ? acc.concat([current]) : acc;
+    }, []);
+
+  const handleDateClick = (dateStr) => {
+    setSelectedDate(dateStr);
+    setEditingEvent({});
+  };
+
+  const handleSaveEvent = async (e) => {
+    setLoading(true);
+    setTimeout(() => {
+      showToast(e.id ? "火花已更新" : "火花已发射 ✨");
+      setLoading(false);
+      setSelectedDate(null);
+      setEditingEvent(null);
+    }, 800);
+  };
+
+  // ... (Keep handleCreateSpace and handleJoinSpace logic)
   const handleCreateSpace = async (e) => {
     e.preventDefault();
     if (!newSpaceName.trim()) return;
@@ -189,6 +237,18 @@ export default function HomePage() {
     }
   };
 
+  const handlePrevMonth = () => {
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1),
+    );
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1),
+    );
+  };
+
   if (loading) {
     return (
       <div className="page">
@@ -204,15 +264,16 @@ export default function HomePage() {
       {/* Background Aurora Blobs are handled in globals.css */}
 
       <div className="container" style={{ paddingBottom: "100px" }}>
+        {/* Header */}
         <header
           className="page-header"
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "20px 0 40px",
-            borderBottom: "1px solid rgba(6,182,212,0.1)",
-            marginBottom: "20px",
+            padding: "20px 0 20px",
+            // borderBottom: "1px solid rgba(6,182,212,0.1)", // Removed border for cleaner look
+            marginBottom: "10px",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -220,21 +281,21 @@ export default function HomePage() {
               className="gradient-text"
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "2rem",
+                fontSize: "1.5rem",
                 fontWeight: "900",
                 letterSpacing: "-0.02em",
                 marginBottom: "4px",
                 lineHeight: "1",
               }}
             >
-              PULSE RADAR
+              CALENDAR
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Radar size={14} className="text-cyan-500 animate-spin-slow" />
+              <Radar size={12} className="text-cyan-500 animate-spin-slow" />
               <p
                 style={{
                   color: "rgba(6,182,212,0.8)",
-                  fontSize: "0.75rem",
+                  fontSize: "0.65rem",
                   fontWeight: "500",
                   fontFamily: "var(--font-tech)",
                   letterSpacing: "0.1em",
@@ -242,466 +303,74 @@ export default function HomePage() {
                   textShadow: "0 0 5px rgba(6,182,212,0.4)",
                 }}
               >
-                TACTICAL DATA STREAM
+                PULSE RADAR ACTIVE
               </p>
             </div>
           </div>
 
-          {user && (
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="avatar"
-              style={{
-                background: user.avatar_color,
-                cursor: "pointer",
-                width: "48px",
-                height: "48px",
-                fontSize: "1rem",
-                border: "1px solid var(--accent-cyan)",
-                boxShadow: "0 0 16px rgba(6,182,212,0.2)",
-                clipPath:
-                  "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)", // Hexagon
-                borderRadius: "0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                fontWeight: "bold",
+          <div className="flex gap-4 items-center">
+            {/* Add Event Button Placeholder */}
+            <button
+              className="w-10 h-10 rounded-full bg-accent-gradient flex items-center justify-center text-white shadow-lg shadow-purple-500/30 hover:scale-105 transition-transform"
+              onClick={() => {
+                const todayStr = new Date().toISOString().split("T")[0];
+                handleDateClick(todayStr);
               }}
-              onClick={() => setShowAccount(true)}
             >
-              {user.nickname?.charAt(0)}
-            </motion.div>
-          )}
+              <Plus size={20} strokeWidth={3} />
+            </button>
+
+            {user && (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="hex-avatar-hud"
+                style={{
+                  background: user.avatar_color,
+                  width: "36px",
+                  height: "36px",
+                  fontSize: "1rem",
+                }}
+                onClick={() => setShowAccount(true)}
+              >
+                {user.nickname?.charAt(0)}
+              </motion.div>
+            )}
+          </div>
         </header>
 
-        <div className="pulse-grid">
-          <div className="pulse-center">
-            {/* ======= Mobile-Only: Social Battery at Top ======= */}
-            <div className="mobile-only" style={{ marginBottom: "32px" }}>
-              <CosmicCard corners={false} style={{ padding: 0 }}>
-                <div style={{ padding: "20px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <Zap
-                      size={20}
-                      style={{
-                        color: "#facc15",
-                        filter: "drop-shadow(0 0 8px rgba(250,204,21,0.6))",
-                      }}
-                    />
-                    <h3
-                      className="holo-text"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "1.1rem",
-                      }}
-                    >
-                      我的状态
-                    </h3>
-                  </div>
-                  <VibeSlider
-                    initialLevel={battery.level}
-                    onVibeChange={(lvl, vibe) => updateBattery(lvl, vibe)}
-                  />
-                </div>
-              </CosmicCard>
-            </div>
-            {/* ================================================= */}
+        {/* Pulse Summary Card */}
+        <PulseSummary />
 
-            {/* V3.4 Pulse Radar Stream Section */}
-            <section
-              className="pulse-stream-section"
-              style={{ position: "relative", minHeight: "60vh" }}
-            >
-              <PulseTimeline
-                events={todayEvents}
-                members={[]}
-                currentUser={user}
-              />
-            </section>
-
-            <section className="spaces-section">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  marginBottom: "24px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "4px",
-                    height: "24px",
-                    background: "var(--cosmic-purple)",
-                    borderRadius: "2px",
-                    boxShadow: "0 0 10px var(--cosmic-purple)",
-                  }}
-                />
-                <Box
-                  size={20}
-                  className="text-purple-400"
-                  style={{ flexShrink: 0 }}
-                />
-                <h3
-                  className="holo-text"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "1.25rem",
-                    fontWeight: "700",
-                  }}
-                >
-                  你的空间
-                </h3>
-              </div>
-
-              {spaces.length === 0 ? (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                  }}
-                >
-                  {/* Join Space — console button */}
-                  <motion.button
-                    whileHover={{
-                      scale: 1.03,
-                      borderColor: "rgba(6,182,212,0.4)",
-                    }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setShowJoin(true)}
-                    style={{
-                      padding: "24px 16px",
-                      background: "rgba(6,182,212,0.04)",
-                      border: "1px dashed rgba(6,182,212,0.2)",
-                      borderRadius: "14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "10px",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "10px",
-                        background: "rgba(6,182,212,0.1)",
-                        border: "1px solid rgba(6,182,212,0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1rem",
-                        color: "var(--cosmic-cyan)",
-                      }}
-                    >
-                      🔗
-                    </div>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        fontWeight: "700",
-                        fontFamily: "var(--font-tech)",
-                        color: "var(--cosmic-cyan)",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      加入空间
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "0.55rem",
-                        color: "var(--text-muted)",
-                        fontFamily: "var(--font-tech)",
-                        opacity: 0.5,
-                      }}
-                    >
-                      输入邀请码
-                    </span>
-                  </motion.button>
-
-                  {/* Create Space — console button */}
-                  <motion.button
-                    whileHover={{
-                      scale: 1.03,
-                      borderColor: "rgba(139,92,246,0.4)",
-                    }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setShowCreate(true)}
-                    style={{
-                      padding: "24px 16px",
-                      background: "rgba(139,92,246,0.04)",
-                      border: "1px dashed rgba(139,92,246,0.2)",
-                      borderRadius: "14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "10px",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "10px",
-                        background: "rgba(139,92,246,0.1)",
-                        border: "1px solid rgba(139,92,246,0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1rem",
-                        color: "var(--accent-primary)",
-                      }}
-                    >
-                      ✦
-                    </div>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        fontWeight: "700",
-                        fontFamily: "var(--font-tech)",
-                        color: "var(--accent-primary)",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      创建空间
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "0.55rem",
-                        color: "var(--text-muted)",
-                        fontFamily: "var(--font-tech)",
-                        opacity: 0.5,
-                      }}
-                    >
-                      新建频道
-                    </span>
-                  </motion.button>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fill, minmax(280px, 1fr))",
-                    gap: "16px",
-                  }}
-                >
-                  {spaces.map((space) => (
-                    <Link key={space.id} href={`/space/${space.id}`}>
-                      <motion.div
-                        whileHover={{
-                          y: -5,
-                          borderColor: "var(--accent-primary)",
-                        }}
-                        className="card space-card"
-                        style={{
-                          padding: "24px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "20px",
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid rgba(255,255,255,0.05)",
-                        }}
-                      >
-                        <div
-                          className="space-card-icon"
-                          style={{
-                            width: "56px",
-                            height: "56px",
-                            borderRadius: "16px",
-                            background: "var(--bg-secondary)",
-                            color: "var(--accent-primary)",
-                            fontSize: "1.5rem",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            border: "1px solid rgba(168, 85, 247, 0.2)",
-                          }}
-                        >
-                          🪐
-                        </div>
-                        <div className="space-card-info" style={{ flex: 1 }}>
-                          <h3
-                            style={{
-                              fontSize: "1.1rem",
-                              fontWeight: "800",
-                              color: "#FFF",
-                            }}
-                          >
-                            {space.name}
-                          </h3>
-                          <p
-                            style={{
-                              fontSize: "0.85rem",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            {space.member_count} 成员已就绪
-                          </p>
-                        </div>
-                      </motion.div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-
-          <aside className="pulse-right desktop-only">
-            <div
-              style={{
-                position: "sticky",
-                top: "40px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "24px",
-              }}
-            >
-              <CosmicCard corners={false} style={{ padding: 0 }}>
-                <div style={{ padding: "20px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <Zap size={18} style={{ color: "var(--cosmic-cyan)" }} />
-                    <h3
-                      className="holo-text"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "1rem",
-                      }}
-                    >
-                      社交电池
-                    </h3>
-                  </div>
-                  <VibeSlider
-                    initialLevel={battery.level}
-                    onVibeChange={(lvl, vibe) => updateBattery(lvl, vibe)}
-                  />
-                </div>
-              </CosmicCard>
-
-              <CosmicCard corners={false} style={{ padding: 0 }}>
-                <div style={{ padding: "20px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <Radar size={18} style={{ color: "var(--cosmic-cyan)" }} />
-                    <h3
-                      className="holo-text"
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "1rem",
-                      }}
-                    >
-                      实时雷达
-                    </h3>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                    }}
-                  >
-                    {todayEvents.slice(0, 6).map((e) => (
-                      <div
-                        key={e.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                        }}
-                      >
-                        <div
-                          className="avatar avatar-sm"
-                          style={{
-                            background: e.avatar_color,
-                            width: "32px",
-                            height: "32px",
-                          }}
-                        >
-                          {e.nickname?.charAt(0)}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{ fontSize: "0.85rem", fontWeight: "700" }}
-                          >
-                            {e.nickname}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.7rem",
-                              color: "var(--text-muted)",
-                            }}
-                          >
-                            {e.note || "同步中..."}
-                          </div>
-                        </div>
-                        {e.status === "party" && (
-                          <div
-                            style={{
-                              width: "6px",
-                              height: "6px",
-                              borderRadius: "50%",
-                              background: "var(--energy-high)",
-                              boxShadow: "0 0 8px var(--energy-high)",
-                            }}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CosmicCard>
-            </div>
-          </aside>
+        {/* Main Calendar View */}
+        <div className="mb-8">
+          <Calendar
+            year={currentDate.getFullYear()}
+            month={currentDate.getMonth()}
+            events={allEvents}
+            onPrev={handlePrevMonth}
+            onNext={handleNextMonth}
+            onDateClick={handleDateClick}
+          />
         </div>
+
+        {/* Today's Pulse Stream */}
+        <div className="mb-4 flex items-center gap-2">
+          <Activity size={16} className="text-accent-primary" />
+          <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider">
+            Today's Pulse
+          </h3>
+        </div>
+
+        <section
+          className="pulse-stream-section"
+          style={{ position: "relative", minHeight: "30vh" }}
+        >
+          <PulseTimeline events={todayEvents} members={[]} currentUser={user} />
+        </section>
       </div>
 
-      <style jsx>{`
-        .mobile-only {
-          display: block;
-        }
-        .desktop-only {
-          display: none;
-        }
-        @media (min-width: 1024px) {
-          .mobile-only {
-            display: none;
-          }
-          .desktop-only {
-            display: block;
-          }
-          .container {
-            max-width: 1280px;
-          }
-        }
-      `}</style>
-
+      {/* Modals */}
       {showAccount && user && (
         <div
           className="modal-overlay"
@@ -818,189 +487,29 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Create Space Modal */}
-      {showCreate && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowCreate(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(12px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <CosmicCard
-            style={{ maxWidth: "480px", width: "90%" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "24px",
-              }}
-            >
-              <h2
-                className="gradient-text"
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "1.5rem",
-                }}
-              >
-                创建新空间
-              </h2>
-              <button
-                onClick={() => setShowCreate(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--text-secondary)",
-                  fontSize: "1.5rem",
-                  cursor: "pointer",
-                  width: "32px",
-                  height: "32px",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleCreateSpace}>
-              <div style={{ marginBottom: "24px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.75rem",
-                    color: "var(--cosmic-cyan)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    marginBottom: "8px",
-                    fontWeight: "700",
-                  }}
-                >
-                  空间名称
-                </label>
-                <input
-                  className="cosmic-input"
-                  placeholder="例如：老友聚会群"
-                  value={newSpaceName}
-                  onChange={(e) => setNewSpaceName(e.target.value)}
-                  autoFocus
-                  maxLength={30}
-                />
-              </div>
-              <button
-                className="btn-cosmic"
-                type="submit"
-                disabled={actionLoading || !newSpaceName.trim()}
-                style={{ width: "100%" }}
-              >
-                {actionLoading ? "创建中..." : "创建空间 →"}
-              </button>
-            </form>
-          </CosmicCard>
-        </div>
-      )}
-
-      {/* Join Space Modal */}
-      {showJoin && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowJoin(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.8)",
-            backdropFilter: "blur(12px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <CosmicCard
-            style={{ maxWidth: "480px", width: "90%" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "24px",
-              }}
-            >
-              <h2
-                className="gradient-text"
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "1.5rem",
-                }}
-              >
-                加入空间
-              </h2>
-              <button
-                onClick={() => setShowJoin(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--text-secondary)",
-                  fontSize: "1.5rem",
-                  cursor: "pointer",
-                  width: "32px",
-                  height: "32px",
-                }}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleJoinSpace}>
-              <div style={{ marginBottom: "24px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "0.75rem",
-                    color: "var(--cosmic-cyan)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    marginBottom: "8px",
-                    fontWeight: "700",
-                  }}
-                >
-                  邀请码
-                </label>
-                <input
-                  className="cosmic-input"
-                  placeholder="输入6位邀请码"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  autoFocus
-                  maxLength={6}
-                  style={{
-                    letterSpacing: "4px",
-                    textAlign: "center",
-                    fontSize: "1.3rem",
-                    fontWeight: 700,
-                  }}
-                />
-              </div>
-              <button
-                className="btn-cosmic"
-                type="submit"
-                disabled={actionLoading || inviteCode.trim().length < 6}
-                style={{ width: "100%" }}
-              >
-                {actionLoading ? "加入中..." : "加入空间 →"}
-              </button>
-            </form>
-          </CosmicCard>
-        </div>
-      )}
+      {/* Event Modal */}
+      <AnimatePresence>
+        {(selectedDate || editingEvent) && (
+          <EventModal
+            date={selectedDate}
+            event={editingEvent || {}}
+            events={allEvents}
+            members={allMembers}
+            currentUser={user}
+            onClose={() => {
+              setSelectedDate(null);
+              setEditingEvent(null);
+            }}
+            onSave={handleSaveEvent}
+            onDelete={() => {
+              showToast("火花已熄灭 (Moved to Trash)");
+              setSelectedDate(null);
+              setEditingEvent(null);
+            }}
+            onRSVP={() => showToast("已回复请求")}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Toast */}
       {toast && <div className="toast">{toast}</div>}

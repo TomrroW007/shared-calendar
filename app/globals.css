@@ -3358,3 +3358,175 @@ select.input.status-tentative {
   0% { transform: translateX(-40px); }
   100% { transform: translateX(300px); }
 }
+
+/* =========================================================================
+   视觉打磨补充 - VibeSlider、空间按钮、六边形头像
+   ========================================================================= */
+
+/* 战术能量槽 (覆盖 VibeSlider 的默认外观) */
+.vibe-range-input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(6, 182, 212, 0.2) !important;
+  height: 8px !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  position: relative;
+  overflow: visible !important;
+}
+
+.vibe-range-input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 4px !important; /* 极细的光剑指针 */
+  height: 20px !important;
+  background: #fff !important;
+  border-radius: 2px !important;
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.8),
+    0 0 20px var(--accent-cyan) !important;
+  cursor: ew-resize;
+  position: relative;
+  z-index: 10;
+  border: none !important;
+}
+
+/* Firefox Range Thumb */
+.vibe-range-input::-moz-range-thumb {
+  appearance: none;
+  width: 4px !important;
+  height: 20px !important;
+  background: #fff !important;
+  border-radius: 2px !important;
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.8),
+    0 0 20px var(--accent-cyan) !important;
+  cursor: ew-resize;
+  position: relative;
+  z-index: 10;
+  border: none !important;
+}
+
+/* 能量条填充效果 - 使用 CSS 变量动态设置 */
+.vibe-range-input::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: var(--fill-level, 50%); /* 由 JS 动态设置 */
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.2), var(--accent-cyan));
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+  border-radius: 4px 0 0 4px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 空间操作面板 (Create/Join Buttons) */
+.space-action-btn {
+  background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.space-action-btn:hover {
+  background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.1) 0%, rgba(0, 0, 0, 0) 100%);
+  border-color: var(--accent-cyan);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 0 15px rgba(6, 182, 212, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 紫色变体 - 用于创建空间按钮 */
+.space-action-btn.purple-variant {
+  background: radial-gradient(circle at top left, rgba(139, 92, 246, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.space-action-btn.purple-variant:hover {
+  background: radial-gradient(circle at top left, rgba(139, 92, 246, 0.1) 0%, rgba(0, 0, 0, 0) 100%);
+  border-color: var(--accent-primary);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    0 0 15px rgba(139, 92, 246, 0.2);
+}
+
+.space-action-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: var(--cosmic-cyan);
+}
+
+.space-action-icon.purple-variant {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: var(--accent-primary);
+}
+
+.space-action-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-tech);
+  color: var(--cosmic-cyan);
+  letter-spacing: 0.08em;
+}
+
+.space-action-title.purple-variant {
+  color: var(--accent-primary);
+}
+
+.space-action-subtitle {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  font-family: var(--font-tech);
+  opacity: 0.5;
+}
+
+/* 顶部 Header 的晶体六边形头像 */
+.hex-avatar-hud {
+  width: 42px;
+  height: 42px;
+  background: rgba(6, 182, 212, 0.1);
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  border: 1px solid var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-tech);
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+  text-shadow: 0 0 8px var(--accent-cyan);
+  position: relative;
+  transition: all 0.3s;
+  cursor: pointer;
+  /* 内阴影模拟能量晶体 */
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.1),
+    0 0 16px rgba(6, 182, 212, 0.2);
+}
+
+.hex-avatar-hud:hover {
+  filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.6));
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.15),
+    0 0 20px rgba(6, 182, 212, 0.4);
+}

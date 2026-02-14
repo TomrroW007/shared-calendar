@@ -2,18 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Zap, Layers, Info } from "lucide-react";
+import { Calendar, BarChart2, CheckSquare, User, Info } from "lucide-react";
 
 export default function DesktopSidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { label: "Pulse", icon: <Activity size={20} strokeWidth={2} />, path: "/" },
-    { label: "Spark", icon: <Zap size={20} strokeWidth={2} />, path: "/spark" },
     {
-      label: "Memories",
-      icon: <Layers size={20} strokeWidth={2} />,
-      path: "/memories",
+      label: "Calendar",
+      icon: <Calendar size={20} strokeWidth={2} />,
+      path: "/",
+    },
+    {
+      label: "Insights",
+      icon: <BarChart2 size={20} strokeWidth={2} />,
+      path: "/insights",
+    },
+    {
+      label: "Tasks",
+      icon: <CheckSquare size={20} strokeWidth={2} />,
+      path: "/tasks",
+    },
+    {
+      label: "Profile",
+      icon: <User size={20} strokeWidth={2} />,
+      path: "/profile",
     },
   ];
 

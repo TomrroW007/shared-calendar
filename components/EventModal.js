@@ -114,6 +114,83 @@ export default function EventModal({
   const [participantMode, setParticipantMode] = useState("none");
   const [selectedParticipants, setSelectedParticipants] = useState([]);
 
+  // AI Smart Scheduling Logic
+  const [aiSlots, setAiSlots] = useState([]);
+  const [analyzingPulse, setAnalyzingPulse] = useState(false);
+
+  useEffect(() => {
+    if (selectedParticipants.length > 0 && isEditing) {
+      setAnalyzingPulse(true);
+      // Simulate PulseRadar Analysis
+      const timer = setTimeout(() => {
+        // Mock data based on requested "Magic Moment"
+        const baseTime = startTime.split(":")[0] || "14";
+        const slots = [
+          {
+            time: "14:00 - 15:00",
+            score: 98,
+            reason: "全员高效时段 ⚡️",
+            type: "perfect",
+            start: "14:00",
+            end: "15:00",
+          },
+          {
+            time: "16:30 - 17:30",
+            score: 85,
+            reason: "Alex 会议结束",
+            type: "ok",
+            start: "16:30",
+            end: "17:30",
+          },
+          {
+            time: "10:00 - 11:00",
+            score: 45,
+            reason: "⚠️ Alice 忙碌",
+            type: "bad",
+            start: "10:00",
+            end: "11:00",
+          },
+        ];
+        setAiSlots(slots);
+        setAnalyzingPulse(false);
+      }, 1200);
+      return () => clearTimeout(timer);
+    } else {
+      setAiSlots([]);
+    }
+  }, [selectedParticipants, isEditing]);
+
+  const applyAiSlot = (slot) => {
+    setStartTime(slot.start);
+    setEndTime(slot.end);
+    setIsAllDay(false);
+  };
+
+  useEffect(() => {
+    // Mock basic conflict detection for demo
+    if (selectedParticipants.length > 0) {
+      if (startDate === date) {
+        // Assuming 'date' is today for demo
+        const hour = parseInt(startTime.split(":")[0]);
+        if (hour === 10) {
+          setConflictInfo({
+            hasConflict: true,
+            message: "⚠️ 检测到冲突: Alice 在此时段忙碌 (Project X Sync)",
+          });
+        } else if (hour === 16) {
+          setConflictInfo({
+            hasConflict: true,
+            message: "⚠️ 注意: Bob 此时段是 '软冲突' (可能是通勤)",
+          });
+        } else {
+          setConflictInfo(null);
+        }
+      }
+    } else {
+      setConflictInfo(null);
+    }
+  }, [startTime, startDate, selectedParticipants, date]);
+
   const handleNlpParse = () => {
     if (!nlpInput.trim()) return;
     const result = parseQuickAddCommand(nlpInput);
@@ -386,20 +463,224 @@ export default function EventModal({
                       />
                     </div>
 
+                    {/* Participant Selection */}
+                    <div style={{ marginBottom: "24px" }}>
+                      <label
+                        className="font-tech"
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-muted)",
+                          fontWeight: "700",
+                          display: "block",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        邀请伙伴 (AI将分析共同空闲)
+                      </label>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {members.map((m) => {
+                          const isSelected = selectedParticipants.includes(
+                            m.id,
+                          );
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedParticipants((prev) =>
+                                  isSelected
+                                    ? prev.filter((id) => id !== m.id)
+                                    : [...prev, m.id],
+                                );
+                              }}
+                              style={{
+                                background: isSelected
+                                  ? "var(--cosmic-cyan)"
+                                  : "rgba(255,255,255,0.1)",
+                                color: isSelected
+                                  ? "#000"
+                                  : "var(--text-primary)",
+                                border: "none",
+                                borderRadius: "20px",
+                                padding: "6px 14px",
+                                fontSize: "0.85rem",
+                                fontWeight: "600",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: "16px",
+                                  height: "16px",
+                                  borderRadius: "50%",
+                                  background: m.avatar_color,
+                                  fontSize: "10px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "#FFF",
+                                }}
+                              >
+                                {m.nickname?.[0]}
+                              </div>
+                              {m.nickname}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* AI Smart Slots */}
+                    {(analyzingPulse || aiSlots.length > 0) && (
+                      <div
+                        style={{
+                          marginBottom: "32px",
+                          background: "rgba(124, 58, 237, 0.1)",
+                          borderRadius: "12px",
+                          padding: "16px",
+                          border: "1px solid rgba(124, 58, 237, 0.3)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "12px",
+                            color: "var(--cosmic-purple)",
+                            fontWeight: "700",
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          <div
+                            className={`pulse-dot ${analyzingPulse ? "animate-pulse" : ""}`}
+                          />
+                          {analyzingPulse
+                            ? "正在同步 PulseRadar..."
+                            : "AI 智能推荐时段"}
+                        </div>
+
+                        {analyzingPulse ? (
+                          <div className="skeleton-lines">
+                            <div
+                              className="skeleton"
+                              style={{
+                                width: "100%",
+                                height: "40px",
+                                marginBottom: "8px",
+                                background: "rgba(255,255,255,0.05)",
+                                borderRadius: "8px",
+                              }}
+                            />
+                            <div
+                              className="skeleton"
+                              style={{
+                                width: "80%",
+                                height: "40px",
+                                background: "rgba(255,255,255,0.05)",
+                                borderRadius: "8px",
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{ display: "grid", gap: "8px" }}>
+                            {aiSlots.map((slot, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => applyAiSlot(slot)}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  background: "rgba(0,0,0,0.2)",
+                                  border: "1px solid rgba(255,255,255,0.1)",
+                                  padding: "10px 14px",
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  transition: "all 0.2s",
+                                }}
+                                onMouseOver={(e) =>
+                                  (e.currentTarget.style.background =
+                                    "rgba(255,255,255,0.05)")
+                                }
+                                onMouseOut={(e) =>
+                                  (e.currentTarget.style.background =
+                                    "rgba(0,0,0,0.2)")
+                                }
+                              >
+                                <div>
+                                  <div
+                                    style={{
+                                      color: "#FFF",
+                                      fontWeight: "600",
+                                      fontSize: "0.95rem",
+                                    }}
+                                  >
+                                    {slot.time}
+                                  </div>
+                                  <div
+                                    style={{
+                                      color: "var(--text-secondary)",
+                                      fontSize: "0.8rem",
+                                    }}
+                                  >
+                                    {slot.reason}
+                                  </div>
+                                </div>
+                                <div
+                                  style={{
+                                    background:
+                                      slot.type === "perfect"
+                                        ? "#10B981"
+                                        : slot.type === "ok"
+                                          ? "#F59E0B"
+                                          : "#EF4444",
+                                    color: "#000",
+                                    fontSize: "0.75rem",
+                                    fontWeight: "800",
+                                    padding: "2px 8px",
+                                    borderRadius: "12px",
+                                  }}
+                                >
+                                  {slot.score}%
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div
                       style={{
                         display: "flex",
-                        gap: "20px",
-                        marginBottom: "32px",
+                        gap: "16px",
+                        marginBottom: "24px",
+                        flexWrap: "wrap",
+                        alignItems: "flex-end",
                       }}
                     >
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: "140px" }}>
                         <label
                           className="font-tech"
                           style={{
                             fontSize: "0.75rem",
                             color: "var(--text-muted)",
                             fontWeight: "700",
+                            marginBottom: "8px",
+                            display: "block",
                           }}
                         >
                           📅 日期
@@ -411,24 +692,124 @@ export default function EventModal({
                           onChange={(e) => setStartDate(e.target.value)}
                         />
                       </div>
-                      <div style={{ flex: 1 }}>
+
+                      {!isAllDay && (
+                        <>
+                          <div style={{ width: "110px" }}>
+                            <label
+                              className="font-tech"
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "var(--text-muted)",
+                                fontWeight: "700",
+                                marginBottom: "8px",
+                                display: "block",
+                              }}
+                            >
+                              开始
+                            </label>
+                            <input
+                              className="cosmic-input"
+                              type="time"
+                              value={startTime}
+                              onChange={(e) => setStartTime(e.target.value)}
+                              style={{ textAlign: "center" }}
+                            />
+                          </div>
+                          <div style={{ width: "110px" }}>
+                            <label
+                              className="font-tech"
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "var(--text-muted)",
+                                fontWeight: "700",
+                                marginBottom: "8px",
+                                display: "block",
+                              }}
+                            >
+                              结束
+                            </label>
+                            <input
+                              className="cosmic-input"
+                              type="time"
+                              value={endTime}
+                              onChange={(e) => setEndTime(e.target.value)}
+                              style={{ textAlign: "center" }}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      <div style={{ paddingBottom: "14px" }}>
                         <label
-                          className="font-tech"
                           style={{
-                            fontSize: "0.75rem",
-                            color: "var(--text-muted)",
-                            fontWeight: "700",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: "var(--text-secondary)",
+                            cursor: "pointer",
+                            background: "rgba(255,255,255,0.05)",
+                            padding: "10px 14px",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(255,255,255,0.1)",
                           }}
                         >
-                          📍 地点
+                          <input
+                            type="checkbox"
+                            checked={isAllDay}
+                            onChange={(e) => setIsAllDay(e.target.checked)}
+                            style={{ accentColor: "var(--cosmic-cyan)" }}
+                          />
+                          <span
+                            style={{ fontSize: "0.85rem", fontWeight: "600" }}
+                          >
+                            全天
+                          </span>
                         </label>
-                        <input
-                          className="cosmic-input"
-                          placeholder="在哪？"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                        />
                       </div>
+                    </div>
+
+                    {/* Conflict Info */}
+                    {conflictInfo && !isAllDay && (
+                      <div
+                        style={{
+                          marginBottom: "24px",
+                          padding: "12px 16px",
+                          background: "rgba(239, 68, 68, 0.1)",
+                          border: "1px solid rgba(239, 68, 68, 0.3)",
+                          borderRadius: "8px",
+                          color: "#FCA5A5",
+                          fontSize: "0.85rem",
+                          fontWeight: "600",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <Info size={18} />
+                        {conflictInfo.message}
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: "32px" }}>
+                      <label
+                        className="font-tech"
+                        style={{
+                          fontSize: "0.75rem",
+                          color: "var(--text-muted)",
+                          fontWeight: "700",
+                          marginBottom: "8px",
+                          display: "block",
+                        }}
+                      >
+                        📍 地点
+                      </label>
+                      <input
+                        className="cosmic-input"
+                        placeholder="在哪？"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                      />
                     </div>
 
                     <div style={{ marginBottom: "32px" }}>
