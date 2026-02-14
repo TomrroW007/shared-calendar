@@ -406,7 +406,7 @@ textarea {
   display: flex;
   align-items: flex-end; /* 移动端靠下 */
   justify-content: center;
-  z-index: 1000;
+  z-index: 1500; /* Fixed: 提升层级避免与 BottomNav 冲突 */
   padding: env(safe-area-inset-top) 0 0 0;
 }
 
@@ -2721,4 +2721,309 @@ select.input.status-tentative {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 700;
+}
+
+/* ===== Pulse Timeline Vanilla CSS Classes (v3.4) ===== */
+/* 替代 Tailwind 类以遵循 PRD 规范 */
+
+.pulse-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 6rem;
+  font-family: var(--font-sans);
+  user-select: none;
+}
+
+.pulse-segments {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 2rem;
+  padding-left: 0;
+}
+
+.pulse-segment {
+  position: relative;
+  width: 100%;
+}
+
+/* Gap Segment */
+.gap-segment {
+  display: flex;
+  height: 3rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.3);
+  position: relative;
+}
+
+.gap-segment:hover .gap-time {
+  opacity: 1;
+}
+
+.gap-time {
+  position: absolute;
+  left: 0;
+  width: 3rem;
+  text-align: right;
+  padding-right: 1rem;
+  font-family: var(--font-tech);
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.gap-content {
+  padding-left: 4rem;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  opacity: 0.2;
+  font-family: var(--font-tech);
+  width: 100%;
+}
+
+/* Hour Segment */
+.hour-segment {
+  position: relative;
+  min-height: 3.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.hour-label {
+  position: absolute;
+  left: 0;
+  width: 2.75rem;
+  text-align: right;
+  font-family: var(--font-tech);
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  transition: color 0.3s;
+  top: 1.125rem;
+}
+
+.hour-label.current {
+  color: var(--accent-cyan);
+  font-weight: bold;
+}
+
+.hour-label.inactive {
+  color: #64748b;
+}
+
+.now-badge {
+  position: absolute;
+  left: 4rem;
+  top: 0.875rem;
+  padding: 0.125rem 0.5rem;
+  background: rgba(8, 51, 68, 0.8);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 4px;
+  font-size: 0.625rem;
+  color: #67e8f9;
+  font-weight: bold;
+  letter-spacing: 0.15em;
+  font-family: var(--font-tech);
+  z-index: 10;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 1.25rem;
+}
+
+.events-list.with-now {
+  margin-top: 2.5rem;
+}
+
+.event-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.025em;
+  font-family: var(--font-sans);
+  transition: color 0.2s;
+}
+
+.data-node:hover .event-title {
+  color: #a5f3fc;
+}
+
+.event-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-family: var(--font-tech);
+  letter-spacing: 0.05em;
+}
+
+.event-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: #6366f1;
+  box-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
+}
+
+.event-decoration {
+  opacity: 0.2;
+  transition: opacity 0.2s;
+}
+
+.data-node:hover .event-decoration {
+  opacity: 1;
+}
+
+.event-line {
+  height: 100%;
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--accent-cyan), transparent);
+}
+
+/* Empty State */
+.empty-state {
+  margin-left: 4rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px dashed #1e293b;
+  border-radius: 0.75rem;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.radar-scan {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+}
+
+.radar-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 50%;
+}
+
+.radar-beam {
+  width: 100%;
+  height: 1px;
+  background: rgba(6, 182, 212, 0.3);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: radar-rotate 4s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes radar-rotate {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+.scan-text {
+  font-size: 0.75rem;
+  font-family: var(--font-tech);
+  letter-spacing: 0.2em;
+  color: rgba(6, 182, 212, 0.5);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scanner Line Container */
+.scanner-container {
+  position: absolute;
+  left: 48px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ping Animation for NOW tick */
+.ping-animation {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-cyan);
+  border-radius: 50%;
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  opacity: 0.75;
+}
+
+/* ===== Mobile Performance Optimizations (v3.4) ===== */
+/* 在移动端降低性能消耗，避免低端设备掉帧 */
+
+@media (max-width: 768px) {
+  /* 降低背景模糊强度 */
+  body::before {
+    background:
+      radial-gradient(
+        ellipse at 20% 30%,
+        rgba(139, 92, 246, 0.08) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at 80% 70%,
+        rgba(59, 130, 246, 0.06) 0%,
+        transparent 50%
+      ),
+      linear-gradient(to bottom, #0f172a 0%, #030014 50%, #0a0520 100%);
+  }
+
+  /* 简化星云云朵效果 */
+  .cosmic-cloud-1,
+  .cosmic-cloud-2 {
+    filter: blur(60px);
+    opacity: 0.1;
+  }
+
+  /* 降低玻璃态模糊 */
+  .modal-overlay {
+    backdrop-filter: blur(8px);
+  }
+
+  .holo-dock {
+    backdrop-filter: blur(12px) !important;
+  }
+
+  /* 减少 box-shadow 发光效果 */
+  .data-node {
+    box-shadow: none;
+  }
+
+  .data-node:hover {
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.15);
+  }
+
+  .time-beam {
+    box-shadow: 0 0 4px rgba(6, 182, 212, 0.3);
+  }
+
+  /* 简化卡片阴影 */
+  .cosmic-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
 }

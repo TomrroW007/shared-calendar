@@ -702,28 +702,6 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* Account Modal */}
-      <style jsx>{`
-        .mobile-only {
-          display: block;
-        }
-        .desktop-only {
-          display: none;
-        }
-
-        @media (min-width: 1024px) {
-          .mobile-only {
-            display: none;
-          }
-          .desktop-only {
-            display: block;
-          }
-          .container {
-            max-width: 1200px;
-          }
-        }
-      `}</style>
-
       {showAccount && user && (
         <div
           className="modal-overlay"

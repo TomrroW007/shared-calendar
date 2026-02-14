@@ -20,9 +20,10 @@ export default function CosmicCard({
   className = "",
   corners = true,
   style = {},
+  ...props
 }) {
   return (
-    <div className={`cosmic-card ${className}`} style={style}>
+    <div className={`cosmic-card ${className}`} style={style} {...props}>
       {corners && (
         <>
           <div className="cosmic-card-corner-tl" />

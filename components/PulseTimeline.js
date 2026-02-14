@@ -123,14 +123,16 @@ export default function PulseTimeline({ events, members, currentUser }) {
   }
 
   return (
-    <div className="relative w-full pb-24 font-sans select-none">
+    <div className="pulse-container">
       {/* The Time Beam - Fixed Vertical Line */}
       <div className="time-beam" />
 
       {/* Scanner Line Animation */}
-      <div className="absolute left-[48px] top-0 bottom-0 w-[2px] overflow-hidden pointer-events-none z-0">
+      <div className="scanner-container">
         <motion.div
           style={{
+            position: "absolute",
+            left: 0,
             width: "100%",
             height: "150px",
             background:
@@ -144,13 +146,12 @@ export default function PulseTimeline({ events, members, currentUser }) {
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute left-0"
         />
       </div>
 
-      <div className="relative z-10 flex flex-col gap-0 pt-8 pl-0">
+      <div className="pulse-segments">
         {timelineSegments.map((segment, idx) => (
-          <div key={idx} className="relative w-full">
+          <div key={idx} className="pulse-segment">
             {segment.type === "gap" ? (
               <GapSegment from={segment.from} to={segment.to} />
             ) : (
@@ -166,11 +167,9 @@ export default function PulseTimeline({ events, members, currentUser }) {
 
       {/* Empty State / Bottom Filler */}
       {processedEvents.length === 0 && (
-        <div className="ml-16 mt-8 p-6 border border-dashed border-slate-800 rounded-xl opacity-50 flex items-center justify-center flex-col gap-4">
+        <div className="empty-state">
           <RadarScan />
-          <div className="text-xs font-tech tracking-[0.2em] text-cyan-500/50 animate-pulse">
-            SCANNING LOCAL FREQUENCIES...
-          </div>
+          <div className="scan-text">SCANNING LOCAL FREQUENCIES...</div>
         </div>
       )}
     </div>
@@ -185,24 +184,25 @@ function GapSegment({ from, to }) {
       : `${String(from).padStart(2, "0")}:00 Empty`;
 
   return (
-    <div className="flex h-12 items-center text-xs text-muted-foreground/30 relative group">
+    <div className="gap-segment">
       {/* Time Label Area (Left of Beam) */}
-      <div className="w-12 text-right pr-4 font-tech tracking-wider opacity-0 group-hover:opacity-100 transition-opacity absolute left-0">
+      <div className="gap-time">
         {/* Hover to see start time of gap */}
         {String(from).padStart(2, "0")}:00
       </div>
 
       {/* Tick on Beam */}
       <div
-        className="absolute left-[48px]"
         style={{
+          position: "absolute",
+          left: "48px",
           ...getTickStyle("dim"),
           transform: "translate(-50%, -50%)",
         }}
       />
 
       {/* Content Area (Right of Beam) */}
-      <div className="pl-16 text-[10px] uppercase tracking-widest opacity-20 font-tech w-full">
+      <div className="gap-content">
         {label} · {duration}h SILENT
       </div>
     </div>
@@ -213,23 +213,18 @@ function HourSegment({ hour, events, isCurrent }) {
   const timeLabel = `${String(hour).padStart(2, "0")}:00`;
 
   return (
-    <div className="relative min-h-[60px] py-2">
+    <div className="hour-segment">
       {/* Time Label (Left) */}
-      <div
-        className={`absolute left-0 w-11 text-right font-tech text-sm tracking-wider leading-none transition-colors ${
-          isCurrent
-            ? "text-cyan-400 font-bold shadow-cyan-500/50"
-            : "text-slate-500"
-        }`}
-        style={{ top: "18px" }}
-      >
+      <div className={`hour-label ${isCurrent ? "current" : "inactive"}`}>
         {timeLabel}
       </div>
 
       {/* Tick (On Beam) */}
       <div
-        className="absolute left-[48px] z-20"
         style={{
+          position: "absolute",
+          left: "48px",
+          zIndex: 20,
           ...getTickStyle(
             isCurrent ? "now" : events.length > 0 ? "event" : "empty",
           ),
@@ -237,31 +232,20 @@ function HourSegment({ hour, events, isCurrent }) {
           transform: "translate(-50%, -50%)",
         }}
       >
-        {isCurrent && (
-          <div className="absolute inset-0 bg-cyan-400 rounded-full animate-ping opacity-75"></div>
-        )}
+        {isCurrent && <div className="ping-animation"></div>}
       </div>
 
       {/* NOW Indicator Badge */}
-      {isCurrent && (
-        <div className="absolute left-[64px] top-[14px] px-2 py-0.5 bg-cyan-950/80 border border-cyan-500/30 rounded-[4px] text-[10px] text-cyan-300 font-bold tracking-widest font-tech z-10 backdrop-blur-sm shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-          NOW
-        </div>
-      )}
+      {isCurrent && <div className="now-badge">NOW</div>}
 
       {/* Events List */}
-      <div
-        className="flex flex-col gap-3 min-h-[20px]"
-        style={{ marginTop: isCurrent ? "40px" : "0" }}
-      >
+      <div className={`events-list ${isCurrent ? "with-now" : ""}`}>
         {events.map((event) => (
-          <div key={event._id} className="data-node group">
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-white tracking-wide font-sans group-hover:text-cyan-200 transition-colors">
-                {event.title}
-              </h4>
-              <p className="text-xs text-slate-400 flex items-center gap-2 mt-1 font-tech tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_5px_rgba(99,102,241,0.5)]"></span>
+          <div key={event._id} className="data-node">
+            <div style={{ flex: 1 }}>
+              <h4 className="event-title">{event.title}</h4>
+              <p className="event-time">
+                <span className="event-dot"></span>
                 {new Date(event.start_at).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -271,8 +255,8 @@ function HourSegment({ hour, events, isCurrent }) {
             </div>
 
             {/* Simple decoration for the node */}
-            <div className="opacity-20 group-hover:opacity-100 transition-opacity">
-              <div className="h-full w-[2px] bg-gradient-to-b from-transparent via-cyan-500 to-transparent"></div>
+            <div className="event-decoration">
+              <div className="event-line"></div>
             </div>
           </div>
         ))}
@@ -283,9 +267,9 @@ function HourSegment({ hour, events, isCurrent }) {
 
 function RadarScan() {
   return (
-    <div className="relative w-16 h-16 flex items-center justify-center opacity-50">
-      <div className="absolute inset-0 border border-cyan-500/20 rounded-full"></div>
-      <div className="w-full h-[1px] bg-cyan-500/30 absolute top-1/2 -translate-y-1/2 animate-spin-slow origin-center"></div>
+    <div className="radar-scan">
+      <div className="radar-ring"></div>
+      <div className="radar-beam"></div>
     </div>
   );
 }
