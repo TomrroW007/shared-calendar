@@ -26,15 +26,14 @@ export default function ProposalPage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [toast, setToast] = useState('');
 
-    const getToken = () => localStorage.getItem('token');
+
     const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
     const fetchData = useCallback(async () => {
         try {
-            const token = getToken();
             const [proposalsRes, spaceRes] = await Promise.all([
-                fetch(`/api/spaces/${spaceId}/proposals`, { headers: { Authorization: `Bearer ${token}` } }),
-                fetch(`/api/spaces/${spaceId}`, { headers: { Authorization: `Bearer ${token}` } }),
+                fetch(`/api/spaces/${spaceId}/proposals`),
+                fetch(`/api/spaces/${spaceId}`),
             ]);
             const proposalsData = await proposalsRes.json();
             const spaceData = await spaceRes.json();
@@ -45,12 +44,10 @@ export default function ProposalPage() {
     }, [spaceId]);
 
     useEffect(() => {
-        const token = getToken();
-        if (!token) { router.push('/login'); return; }
         const savedUser = localStorage.getItem('user');
         if (savedUser) setCurrentUser(JSON.parse(savedUser));
         fetchData();
-    }, [fetchData, router]);
+    }, [fetchData]);
 
     // Expose refresh for SSE-driven real-time updates
     useEffect(() => {
@@ -76,7 +73,7 @@ export default function ProposalPage() {
         try {
             const res = await fetch(`/api/spaces/${spaceId}/proposals`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title: newTitle.trim(), description: newDesc.trim(), candidate_dates: newDates }),
             });
             if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
@@ -109,7 +106,7 @@ export default function ProposalPage() {
         try {
             await fetch(`/api/spaces/${spaceId}/proposals/${proposalId}/vote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ votes: existingVotes }),
             });
             fetchData();
@@ -121,7 +118,7 @@ export default function ProposalPage() {
         try {
             const res = await fetch(`/api/spaces/${spaceId}/proposals/${proposalId}/confirm`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ date }),
             });
             if (!res.ok) { const data = await res.json(); throw new Error(data.error); }
@@ -135,7 +132,7 @@ export default function ProposalPage() {
         try {
             await fetch(`/api/spaces/${spaceId}/proposals/${proposalId}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: 'cancelled' }),
             });
             showToast('提案已取消');

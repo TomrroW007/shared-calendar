@@ -2,30 +2,32 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
 
-async function authenticate(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return null;
-    const token = authHeader.split(' ')[1];
-    if (!token) return null;
-    await dbConnect();
-    return User.findOne({ token }).lean();
-}
-
 export async function GET(request) {
-    const user = await authenticate(request);
-    if (!user) {
+    const userId = request.headers.get('x-user-id');
+    if (!userId) {
         return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
 
-    // Format response to match legacy behavior (exclude token if needed, though lean() returns POJO)
-    // Legacy getAuthUser removed token.
-    const { token, ...userWithoutToken } = user;
-    // Map _id to id if frontend expects 'id'
-    const responseUser = {
-        ...userWithoutToken,
-        id: user._id.toString()
-    };
-    delete responseUser._id;
+    try {
+        await dbConnect();
+        // Securely fetch user while excluding password_hash
+        const user = await User.findById(userId).select('-password_hash').lean();
+        if (!user) {
+            return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+        }
 
-    return NextResponse.json({ user: responseUser });
+        const responseUser = {
+            id: user._id.toString(),
+            username: user.username,
+            nickname: user.nickname,
+            avatar_color: user.avatar_color,
+            ics_urls: user.ics_urls || [],
+            daily_statuses: user.daily_statuses || {}
+        };
+
+        return NextResponse.json({ user: responseUser });
+    } catch (error) {
+        console.error('Fetch me error:', error);
+        return NextResponse.json({ error: '加载用户信息失败' }, { status: 500 });
+    }
 }

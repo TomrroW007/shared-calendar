@@ -3,12 +3,10 @@ import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
 
 async function authenticate(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return null;
-    const token = authHeader.split(' ')[1];
-    if (!token) return null;
+    const userId = request.headers.get('x-user-id');
+    if (!userId) return null;
     await dbConnect();
-    return User.findOne({ token });
+    return User.findById(userId);
 }
 
 export async function GET(request) {

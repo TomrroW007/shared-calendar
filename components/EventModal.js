@@ -107,9 +107,7 @@ export default function EventModal({ date, event, events = [], members, currentU
 
         setLoadingRecommend(true);
         try {
-            const res = await fetch(`/api/spaces/${spaceId}/recommend`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch(`/api/spaces/${spaceId}/recommend`);
             const data = await res.json();
             setRecommendations(data.recommendations || []);
         } catch (e) { console.error(e); }
@@ -158,8 +156,7 @@ export default function EventModal({ date, event, events = [], members, currentU
             await fetch('/api/users/me/status', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ date: startDate, emoji, text })
             });
@@ -186,9 +183,7 @@ export default function EventModal({ date, event, events = [], members, currentU
     const fetchComments = useCallback(async () => {
         if (!event?.id) return;
         try {
-            const res = await fetch(`/api/comments?relatedId=${event.id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch(`/api/comments?relatedId=${event.id}`);
             const data = await res.json();
             setComments(data.comments || []);
         } catch (e) { console.error(e); }
@@ -255,8 +250,7 @@ export default function EventModal({ date, event, events = [], members, currentU
             const res = await fetch('/api/comments', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}` 
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ relatedId: event.id, content: newComment.trim() })
             });
@@ -338,8 +332,7 @@ export default function EventModal({ date, event, events = [], members, currentU
         setLoading(true);
         try {
             const res = await fetch(`/api/spaces/${window.location.pathname.split('/').pop()}/events/${event.id}/interest`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                method: 'POST'
             });
             if (res.ok) {
                 const data = await res.json();

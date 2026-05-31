@@ -4,21 +4,24 @@
 
 ## ✨ 功能特性
 
+- **🔐 安全鉴权**: 采用主流密码学加密注册与登录体系，结合 `HttpOnly` 的 Secure JWT Cookie 与 Next.js Edge Middleware 进行全局守护。
 - **📅 状态同步**: 标记每日状态（✅ 可约、💼 忙碌、🏖️ 休假、❓ 待定）。
 - **👥 空间管理**: 创建专属空间，邀请朋友加入（通过邀请码）。
-- **🔔 实时通知**: 基于 SSE (Server-Sent Events) 的实时消息通知。
+- **🔔 实时通知**: 基于 **Pusher Channels WebSockets** 实现的实时无延迟通知与日程同步，100% 兼容 Serverless (Vercel) 环境。
 - **🎯 活动提案**: 发起活动投票，协作选出大家都有空的日期。
-- **📱 移动端适配**: 专为移动端优化的响应式界面。
+- **📱 移动端适配**: 专为移动端优化的响应式流体界面。
 
 ## 🛠️ 技术栈 (Tech Stack)
 
 本项目采用现代主流 Web 技术构建：
 
-- **框架**: [Next.js 15](https://nextjs.org/) (App Router) - React 的全栈框架。
-- **语言**: JavaScript (ES6+).
-- **数据库**: [MongoDB](https://www.mongodb.com/) (配合 [Mongoose](https://mongoosejs.com/) ORM).
-- **样式**: CSS Modules / Global CSS (原生 CSS 变量，无需额外 CSS 框架依赖).
-- **部署**: [Vercel](https://vercel.com/) (Serverless Functions).
+- **框架**: [Next.js 15.5](https://nextjs.org/) (App Router) & React 19。
+- **语言**: JavaScript (ES6+)。
+- **数据库**: [MongoDB](https://www.mongodb.com/) (配合 [Mongoose](https://mongoosejs.com/) ORM)。
+- **安全与鉴权**: `bcryptjs` (密码哈希加密), `jsonwebtoken` & `jose` (Edge 校验 JWT Cookie)。
+- **实时消息网关**: [Pusher Channels SDK](https://pusher.com/channels) (Serverless WebSockets)。
+- **样式**: Native CSS (采用 Fluid Design 响应式设计系统)。
+- **部署**: [Vercel](https://vercel.com/) (Serverless Architecture)。
 
 ## 🚀 快速开始 (Getting Started)
 
@@ -45,13 +48,20 @@ npm install
 复制示例环境配置文件：
 
 ```bash
-cp .env.local.example .env.local
+cp .env.example .env.local
 ```
 
-编辑 `.env.local`，填入你的 MongoDB 连接字符串：
+编辑 `.env.local`，填入你的配置参数（包括 MongoDB 连接字符串、JWT_SECRET、以及 Pusher App Keys 等）：
 
 ```env
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/shared-calendar?retryWrites=true&w=majority
+MONGODB_URI=mongodb://localhost:27017/shared-calendar
+JWT_SECRET=your_jwt_secret_key
+PUSHER_APP_ID=your_pusher_app_id
+PUSHER_KEY=your_pusher_key
+PUSHER_SECRET=your_pusher_secret
+PUSHER_CLUSTER=your_pusher_cluster
+NEXT_PUBLIC_PUSHER_KEY=your_pusher_key
+NEXT_PUBLIC_PUSHER_CLUSTER=your_pusher_cluster
 ```
 
 ### 4. 运行开发服务器

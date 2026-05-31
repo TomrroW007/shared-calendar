@@ -13,11 +13,7 @@ export default function CalendarsPage() {
     }, []);
 
     const fetchCalendars = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const res = await fetch('/api/users/me/calendars', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch('/api/users/me/calendars');
         if (res.ok) {
             const data = await res.json();
             setCalendars(data.calendars);
@@ -27,12 +23,10 @@ export default function CalendarsPage() {
 
     const handleAdd = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token');
         const res = await fetch('/api/users/me/calendars', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ url: newUrl, name: newName })
         });
@@ -47,10 +41,8 @@ export default function CalendarsPage() {
 
     const handleDelete = async (id) => {
         if (!confirm('Remove this calendar?')) return;
-        const token = localStorage.getItem('token');
         const res = await fetch(`/api/users/me/calendars?id=${id}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
             fetchCalendars();

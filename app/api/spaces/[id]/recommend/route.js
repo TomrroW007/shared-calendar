@@ -2,23 +2,16 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Event, SpaceMember, User } from '@/models';
 
-async function authenticate(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return null;
-    const token = authHeader.split(' ')[1];
-    if (!token) return null;
-    await dbConnect();
-    return User.findOne({ token });
-}
-
 export async function GET(request, { params }) {
     try {
         const { id: spaceId } = await params;
-        const user = await authenticate(request);
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const userId = request.headers.get('x-user-id');
+        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        await dbConnect();
 
         // Verify requester is a member of the space
-        const isMember = await SpaceMember.findOne({ space_id: spaceId, user_id: user._id });
+        const isMember = await SpaceMember.findOne({ space_id: spaceId, user_id: userId });
         if (!isMember) {
             return NextResponse.json({ error: 'Forbidden: You must be a member of this space' }, { status: 403 });
         }

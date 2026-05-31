@@ -64,10 +64,12 @@
 
 ## 🧭 Current TODO (prioritized)
 
-- **P0 - Fix now**
-  - `app/u/[username]/page.js`: Fix `setData(data)` bug to use fetched result. (Bug causing public booking page to show no data)
-  - `lib/push.js`: Remove duplicate cleanup call for expired subscriptions.
-  - Review SSE auth approach (`app/api/sse/route.js` + `components/useSSE.js`) — avoid sending long-lived tokens in URLs; plan migration to cookie-based auth or fetch-stream fallback.
+- **P0 - PRD v3.0 Feature Realizations (Next Phase)**
+  - **Social Battery (Vibe Slider)**: Implement top visual slider (🔋 Low Battery / ☕ Open / 🔥 Hype) on dashboard, dynamic avatar neon halo, and AI energy matchmaking recommendation algorithm.
+  - **Spark Engine (AI NLP Parser & Ghost Mode)**: Integrate Gemini / OpenAI API for structured semantic extraction, and implement the 👻 Ghost Mode intent toggle.
+  - **The Lobby (沉浸等待室)**: Build dynamic wait space with Spotify/Apple Music widgets, Carpool car pooling slots, checklist widgets with haptics, and countdown headers.
+  - **Memory Chain (时光记忆链)**: Completed events turn into Memory Nodes on a DNA spiral vertical timeline, featuring auto photo collage generation and streak hit logs.
+  - **Liquid Interface Theme Tuning**: Update global color palette to OLED-friendly `Deep Void (#0A0A0A)` and `Neon Lavender (#B692F6)`.
 
 - **P1 - Security & validation**
   - Add server-side validation (Zod/Joi) for all POST/PUT endpoints.
@@ -77,20 +79,24 @@
 - **P2 - Performance & correctness**
   - Cache or background-sync external ICS fetches instead of fetching on each request.
   - Optimize member-count queries to use aggregation instead of N queries.
-  - Centralize `authenticate` helper and standardize API error/response format.
+  - Standardize API error/response formats globally.
 
 - **P3 - Observability & tests**
-  - Add unit tests for `lib/holidays.js`, `lib/nlp.js`, and API auth helper.
+  - Add unit tests for `lib/nlp.js` and Pusher channel authentication handlers.
   - Add integration tests for event create/update/delete, RSVP flow, and proposal lifecycle.
   - Add CI (GitHub Actions) to run lint + tests on PRs.
 
-If you'd like, I can start implementing the P0 fixes and open a small PR with tests and changelog. Which P0 item should I tackle first?
+## ⚙️ Recent Dev Changes (Completed)
 
-## ⚙️ Recent Dev Changes (for CI/Integration)
+- **Security & Session Authentication Overhaul**:
+  - Replaced unhashed plaintext UUID tokens with a secure password-based login & registration system using `bcryptjs` password hashing.
+  - Sessions are managed via secure `HttpOnly`, `Secure`, `SameSite=Lax` JWT cookies, preventing XSS token theft.
+  - Added Next.js Edge Middleware ([middleware.js](file:///Users/robin/Desktop/shared-calendar/middleware.js)) to globally enforce authentication and forward `x-user-id` in request headers (DRY refactoring across 14 API routes).
+- **Vercel Serverless Compatible Real-time Sync**:
+  - Migrated real-time engine from serverless-incompatible local HTTP streams/SSE to Pusher Channels WebSockets.
+  - Implemented secure serverless Pusher channel authorization at `/api/pusher/auth` for user and space private channels.
+- **Codebase Cleanups & Bug Fixes**:
+  - Fixed ICS date format mismatch rendering bug in月历 monthly calendar (formatted Date objects to YYYY-MM-DD strings).
+  - Fixed Mongoose model compilation leaks in HMR development environments (refactored model compile caching).
+  - Deleted 5 legacy/obsolete SSE and SQLite files (`lib/schema.sql`, `lib/sse-token.js`, `lib/sse-utils.js`, `test/sse-token.test.js`, `test/sse-utils.test.js`).
 
-- Removed local `.env.local` from the repository to avoid committing secrets. Use CI/integration env vars for builds.
-- Implemented short-lived SSE tokens to reduce long-lived token exposure: added `lib/sse-token.js` and endpoint `POST /api/sse/token`.
-- Fixed `app/u/[username]/page.js` bug and removed duplicate cleanup in `lib/push.js`.
-- Added unit tests for SSE token helper and push-utils; ran tests locally (all passing).
-
-These changes are ready to be pushed to the repository and validated in your integration environment (CI). The `.env.local` file was removed locally; CI should provide `MONGODB_URI` and other secrets.

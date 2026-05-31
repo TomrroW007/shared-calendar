@@ -51,7 +51,7 @@ export default function SpacePage() {
     const [activeTab, setActiveTab] = useState('calendar');
     const [calendarMode, setCalendarMode] = useState('month'); // 'month' or 'agenda'
 
-    const getToken = () => localStorage.getItem('token');
+
 
     const toggleUserFilter = (uid) => {
         setSelectedUserIds(prev => {
@@ -78,9 +78,7 @@ export default function SpacePage() {
 
     const fetchSpace = useCallback(async () => {
         try {
-            const res = await fetch(`/api/spaces/${spaceId}`, {
-                headers: { Authorization: `Bearer ${getToken()}` },
-            });
+            const res = await fetch(`/api/spaces/${spaceId}`);
             if (res.status === 401) { router.push('/login'); return; }
             if (res.status === 403) { router.push('/'); return; }
             const data = await res.json();
@@ -94,23 +92,19 @@ export default function SpacePage() {
     const fetchEvents = useCallback(async () => {
         const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
         try {
-            const res = await fetch(`/api/spaces/${spaceId}/events?month=${monthStr}`, {
-                headers: { Authorization: `Bearer ${getToken()}` },
-            });
+            const res = await fetch(`/api/spaces/${spaceId}/events?month=${monthStr}`);
             const data = await res.json();
             setEvents(data.events || []);
         } catch { }
     }, [spaceId, year, month]);
 
     useEffect(() => {
-        const token = getToken();
-        if (!token) { router.push('/login'); return; }
         const savedUser = localStorage.getItem('user');
         if (savedUser) setCurrentUser(JSON.parse(savedUser));
         fetchSpace().then(() => setLoading(false));
         // Request browser notification permission
         requestNotificationPermission();
-    }, [fetchSpace, router]);
+    }, [fetchSpace]);
 
     useEffect(() => {
         if (!loading) fetchEvents();
@@ -201,7 +195,6 @@ export default function SpacePage() {
     };
 
     const handleSaveEvent = async (data) => {
-        const token = getToken();
         try {
             if (editingEvent) {
                 const previousEvent = events.find((e) => e.id === editingEvent.id);
@@ -210,7 +203,7 @@ export default function SpacePage() {
 
                 const res = await fetch(`/api/spaces/${spaceId}/events/${editingEvent.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
                 if (!res.ok) {
@@ -245,7 +238,7 @@ export default function SpacePage() {
 
                 const res = await fetch(`/api/spaces/${spaceId}/events`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
                 if (!res.ok) {
@@ -276,7 +269,6 @@ export default function SpacePage() {
         try {
             const res = await fetch(`/api/spaces/${spaceId}/events/${eventId}`, {
                 method: 'DELETE',
-                headers: { Authorization: `Bearer ${getToken()}` },
             });
             if (!res.ok) {
                 // Rollback on failure
@@ -317,7 +309,7 @@ export default function SpacePage() {
         try {
             const res = await fetch(`/api/spaces/${spaceId}/events/${eventId}/respond`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status, comment }),
             });
             if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
@@ -332,9 +324,7 @@ export default function SpacePage() {
     const handleNotificationClick = async (n) => {
         if (n.type.startsWith('event_') || n.type === 'invitation' || n.type === 'mention' || n.type === 'rsvp') {
             try {
-                const res = await fetch(`/api/spaces/${spaceId}/events/${n.related_id || n.relatedId}`, {
-                    headers: { Authorization: `Bearer ${getToken()}` },
-                });
+                const res = await fetch(`/api/spaces/${spaceId}/events/${n.related_id || n.relatedId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setEditingEvent(data.event);

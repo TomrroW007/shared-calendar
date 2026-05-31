@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+    const [username, setUsername] = useState('');
     const [nickname, setNickname] = useState('');
-    const [tokenInput, setTokenInput] = useState('');
-    const [mode, setLoginMode] = useState('register'); // 'register' or 'token'
+    const [password, setPassword] = useState('');
+    const [mode, setMode] = useState('login'); // 'login' or 'register'
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [mounted, setMounted] = useState(false);
@@ -18,13 +19,13 @@ export default function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!username.trim() || !password) return;
         
         if (mode === 'register') {
             if (!nickname.trim()) return;
             handleRegister();
         } else {
-            if (!tokenInput.trim()) return;
-            handleTokenLogin();
+            handleLogin();
         }
     };
 
@@ -35,13 +36,24 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nickname: nickname.trim() }),
+                body: JSON.stringify({
+                    username: username.trim(),
+                    nickname: nickname.trim(),
+                    password: password
+                }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
-            router.push('/');
+            
+            // Check if there was a pending invite from auto-join
+            const pendingInvite = localStorage.getItem('pendingInvite');
+            if (pendingInvite) {
+                localStorage.removeItem('pendingInvite');
+                router.push(`/join/${pendingInvite}`);
+            } else {
+                router.push('/');
+            }
         } catch (err) {
             setError(err.message || '注册失败，请重试');
         } finally {
@@ -49,20 +61,32 @@ export default function LoginPage() {
         }
     };
 
-    const handleTokenLogin = async () => {
+    const handleLogin = async () => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch('/api/auth/me', {
-                headers: { Authorization: `Bearer ${tokenInput.trim()}` },
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: username.trim(),
+                    password: password
+                }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error('无效的令牌，请检查后重试');
-            localStorage.setItem('token', tokenInput.trim());
+            if (!res.ok) throw new Error(data.error);
             localStorage.setItem('user', JSON.stringify(data.user));
-            router.push('/');
+            
+            // Check if there was a pending invite from auto-join
+            const pendingInvite = localStorage.getItem('pendingInvite');
+            if (pendingInvite) {
+                localStorage.removeItem('pendingInvite');
+                router.push(`/join/${pendingInvite}`);
+            } else {
+                router.push('/');
+            }
         } catch (err) {
-            setError(err.message);
+            setError(err.message || '登录失败，请检查用户名或密码');
         } finally {
             setLoading(false);
         }
@@ -75,30 +99,44 @@ export default function LoginPage() {
             <p className="login-subtitle">与朋友同步你的可用性</p>
 
             <form className="login-form" onSubmit={handleSubmit}>
-                {mode === 'register' ? (
+                <div className="input-group">
+                    <input
+                        className="input"
+                        type="text"
+                        placeholder="用户名 (用作登录凭证)"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        maxLength={30}
+                        autoFocus={mounted}
+                        required
+                    />
+                </div>
+
+                {mode === 'register' && (
                     <div className="input-group">
                         <input
                             className="input"
                             type="text"
-                            placeholder="输入你的昵称"
+                            placeholder="昵称 (如：小明)"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
                             maxLength={20}
-                            autoFocus={mounted}
-                        />
-                    </div>
-                ) : (
-                    <div className="input-group">
-                        <input
-                            className="input"
-                            type="text"
-                            placeholder="粘贴你的访问令牌 (Access Token)"
-                            value={tokenInput}
-                            onChange={(e) => setTokenInput(e.target.value)}
-                            autoFocus={mounted}
+                            required
                         />
                     </div>
                 )}
+
+                <div className="input-group">
+                    <input
+                        className="input"
+                        type="password"
+                        placeholder="密码 (至少6位)"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        maxLength={30}
+                        required
+                    />
+                </div>
 
                 {error && (
                     <p style={{ color: '#f87171', fontSize: '0.85rem', marginBottom: '12px' }}>{error}</p>
@@ -107,16 +145,16 @@ export default function LoginPage() {
                 <button
                     className="btn btn-primary btn-full"
                     type="submit"
-                    disabled={loading || (mode === 'register' ? !nickname.trim() : !tokenInput.trim())}
+                    disabled={loading || !username.trim() || !password || (mode === 'register' && !nickname.trim())}
                 >
-                    {loading ? '正在进入...' : (mode === 'register' ? '开始使用 →' : '登录账户 →')}
+                    {loading ? '正在进入...' : (mode === 'register' ? '注册并开始使用 →' : '登录账户 →')}
                 </button>
 
                 <div className="login-mode-toggle" onClick={() => {
-                    setLoginMode(mode === 'register' ? 'token' : 'register');
+                    setMode(mode === 'register' ? 'login' : 'register');
                     setError('');
                 }}>
-                    {mode === 'register' ? '我有已有账户的令牌' : '创建新账户'}
+                    {mode === 'register' ? '我有已有账户？直接登录' : '没有账户？立即注册'}
                 </div>
             </form>
         </div>

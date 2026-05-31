@@ -13,7 +13,7 @@ export default function JoinPage() {
     const [spaceName, setSpaceName] = useState('');
 
     useEffect(() => {
-        const handleJoin = async (token) => {
+        const handleJoin = async () => {
             setLoading(true);
             setError('');
             try {
@@ -21,7 +21,6 @@ export default function JoinPage() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token || localStorage.getItem('token')}`,
                     },
                     body: JSON.stringify({ invite_code: code }),
                 });
@@ -37,15 +36,8 @@ export default function JoinPage() {
             }
         };
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            // Save invite code and redirect to login
-            localStorage.setItem('pendingInvite', code);
-            router.push('/login');
-            return;
-        }
-        // Auto-join
-        handleJoin(token);
+        // Auto-join directly (middleware guarantees authentication)
+        handleJoin();
     }, [code, router]);
 
     return (

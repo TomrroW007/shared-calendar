@@ -4,19 +4,17 @@ import { Proposal, Space, SpaceMember, User } from '@/models';
 import { pushToSpaceMembers } from '@/lib/sse';
 import { sendPushToSpaceMembers } from '@/lib/push';
 
-async function authenticate(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return null;
-    const token = authHeader.split(' ')[1];
-    if (!token) return null;
+async function getAuthUser(request) {
+    const userId = request.headers.get('x-user-id');
+    if (!userId) return null;
     await dbConnect();
-    return User.findOne({ token });
+    return User.findById(userId);
 }
 
 export async function GET(request, { params }) {
     try {
         const { id: spaceId } = await params;
-        const user = await authenticate(request);
+        const user = await getAuthUser(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Check membership
@@ -64,7 +62,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
     try {
         const { id: spaceId } = await params;
-        const user = await authenticate(request);
+        const user = await getAuthUser(request);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Check role

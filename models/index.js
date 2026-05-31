@@ -2,8 +2,9 @@ import mongoose from 'mongoose';
 
 // User Schema
 const UserSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true, trim: true },
     nickname: { type: String, required: true },
-    token: { type: String, required: true, unique: true },
+    password_hash: { type: String, required: true },
     avatar_color: { type: String, default: '#666' },
     created_at: { type: Date, default: Date.now },
 
@@ -59,11 +60,7 @@ SpaceSchema.index({ invite_code: 1 }, { unique: true, sparse: true });
 
 // Prevent infinite loop by forcing model recompilation in dev
 // (Otherwise cached model without invite_code schema treats findOne({invite_code}) as findOne({}))
-if (mongoose.models.Space) {
-    delete mongoose.models.Space;
-}
-
-export const Space = mongoose.model('Space', SpaceSchema);
+export const Space = mongoose.models.Space || mongoose.model('Space', SpaceSchema);
 
 // Space Member Schema
 const SpaceMemberSchema = new mongoose.Schema({
@@ -75,11 +72,7 @@ const SpaceMemberSchema = new mongoose.Schema({
 // Compound index to prevent duplicate membership
 SpaceMemberSchema.index({ space_id: 1, user_id: 1 }, { unique: true });
 
-if (mongoose.models.SpaceMember) {
-    delete mongoose.models.SpaceMember;
-}
-
-export const SpaceMember = mongoose.model('SpaceMember', SpaceMemberSchema);
+export const SpaceMember = mongoose.models.SpaceMember || mongoose.model('SpaceMember', SpaceMemberSchema);
 
 // Event Schema
 const ParticipantSchema = new mongoose.Schema({
@@ -185,8 +178,4 @@ const ProposalSchema = new mongoose.Schema({
     expires_at: { type: Date } // Auto-expire?
 });
 
-if (mongoose.models.Proposal) {
-    delete mongoose.models.Proposal;
-}
-
-export const Proposal = mongoose.model('Proposal', ProposalSchema);
+export const Proposal = mongoose.models.Proposal || mongoose.model('Proposal', ProposalSchema);

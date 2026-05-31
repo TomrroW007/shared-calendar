@@ -18,7 +18,7 @@ export default function SpaceSettingsPage() {
     const [toast, setToast] = useState('');
     const [copied, setCopied] = useState(false);
 
-    const getToken = () => localStorage.getItem('token');
+
 
     const showToast = (msg) => {
         setToast(msg);
@@ -26,14 +26,10 @@ export default function SpaceSettingsPage() {
     };
 
     useEffect(() => {
-        const token = getToken();
-        if (!token) { router.push('/login'); return; }
         const savedUser = localStorage.getItem('user');
         if (savedUser) setCurrentUser(JSON.parse(savedUser));
 
-        fetch(`/api/spaces/${spaceId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
+        fetch(`/api/spaces/${spaceId}`)
             .then((res) => {
                 if (res.status === 401) { router.push('/login'); return null; }
                 if (res.status === 403) { router.push('/'); return null; }
@@ -56,7 +52,6 @@ export default function SpaceSettingsPage() {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${getToken()}` 
                 },
                 body: JSON.stringify({ memo }),
             });
@@ -98,7 +93,6 @@ export default function SpaceSettingsPage() {
         try {
             await fetch(`/api/spaces/${spaceId}`, {
                 method: 'DELETE',
-                headers: { Authorization: `Bearer ${getToken()}` },
             });
             router.push('/');
         } catch {
