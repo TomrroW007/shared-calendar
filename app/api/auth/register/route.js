@@ -64,10 +64,13 @@ export async function POST(request) {
             user: userObj
         });
 
+        const requestProto = request.headers.get('x-forwarded-proto') || 'http';
+        const isSecure = requestProto === 'https';
+
         // Set secure HttpOnly cookie
         response.cookies.set('auth_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: isSecure,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: '/'

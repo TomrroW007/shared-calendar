@@ -50,9 +50,9 @@ export default function LoginPage() {
             const pendingInvite = localStorage.getItem('pendingInvite');
             if (pendingInvite) {
                 localStorage.removeItem('pendingInvite');
-                router.push(`/join/${pendingInvite}`);
+                window.location.href = `/join/${pendingInvite}`;
             } else {
-                router.push('/');
+                window.location.href = '/';
             }
         } catch (err) {
             setError(err.message || '注册失败，请重试');
@@ -81,9 +81,9 @@ export default function LoginPage() {
             const pendingInvite = localStorage.getItem('pendingInvite');
             if (pendingInvite) {
                 localStorage.removeItem('pendingInvite');
-                router.push(`/join/${pendingInvite}`);
+                window.location.href = `/join/${pendingInvite}`;
             } else {
-                router.push('/');
+                window.location.href = '/';
             }
         } catch (err) {
             setError(err.message || '登录失败，请检查用户名或密码');

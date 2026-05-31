@@ -58,8 +58,8 @@ export async function middleware(request) {
 export const config = {
     matcher: [
         /*
-         * Run middleware on all paths except for static files, manifest, or logos:
+         * Run middleware on all paths except for internal framework folders and static assets:
          */
-        '/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest.webmanifest|logo.png|icon.png).*)',
+        '/((?!_next|favicon.ico|manifest.json|manifest.webmanifest|logo.png|icon.png).*)',
     ],
 };
