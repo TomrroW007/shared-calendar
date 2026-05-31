@@ -87,6 +87,25 @@ export default function HomePage() {
         setTimeout(() => setToast(''), 2500);
     };
 
+    const handleUpdateVibe = async (vibe) => {
+        if (!user) return;
+        const updatedUser = { ...user, social_battery: vibe };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        try {
+            const res = await fetch('/api/users/me/social-battery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ social_battery: vibe }),
+            });
+            if (!res.ok) throw new Error();
+        } catch (err) {
+            showToast('更新状态失败');
+            fetchSpaces();
+        }
+    };
+
     const handleCreateSpace = async (e) => {
         e.preventDefault();
         if (!newSpaceName.trim()) return;
@@ -158,11 +177,47 @@ export default function HomePage() {
                         {user && <p className="subtitle">Hi, {user.nickname} 👋</p>}
                     </div>
                     {user && (
-                        <div className="avatar" style={{ background: user.avatar_color, cursor: 'pointer' }} onClick={() => setShowAccount(true)}>
-                            {user.nickname?.charAt(0)}
+                        <div className={`avatar-halo ${user.social_battery || 'open'}`}>
+                            <div className="avatar" style={{ background: user.avatar_color, cursor: 'pointer', margin: 0 }} onClick={() => setShowAccount(true)}>
+                                {user.nickname?.charAt(0)}
+                            </div>
                         </div>
                     )}
                 </div>
+
+                {/* Vibe Slider (Social Battery) */}
+                {user && (
+                    <div className="vibe-slider-container">
+                        <div className="vibe-slider-title">
+                            <span>🔋 社交电池 (Social Battery)</span>
+                            <span className="vibe-slider-desc">
+                                {user.social_battery === 'low' && '仅限紧急 (Low Battery)'}
+                                {user.social_battery === 'open' && '开放闲聊 (Open)'}
+                                {user.social_battery === 'hype' && '来嗨！(Hype 🔥)'}
+                            </span>
+                        </div>
+                        <div className="vibe-slider-track">
+                            <div 
+                                className={`vibe-slider-item${user.social_battery === 'low' ? ' active low' : ''}`}
+                                onClick={() => handleUpdateVibe('low')}
+                            >
+                                🔋 Low
+                            </div>
+                            <div 
+                                className={`vibe-slider-item${user.social_battery === 'open' ? ' active open' : ''}`}
+                                onClick={() => handleUpdateVibe('open')}
+                            >
+                                ☕ Open
+                            </div>
+                            <div 
+                                className={`vibe-slider-item${user.social_battery === 'hype' ? ' active hype' : ''}`}
+                                onClick={() => handleUpdateVibe('hype')}
+                            >
+                                🔥 Hype
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Dashboard: Today Overview */}
                 {todayEvents.length > 0 && (

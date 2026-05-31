@@ -23,6 +23,7 @@ export async function GET(request, { params }) {
             nickname: m.user_id.nickname,
             avatar_color: m.user_id.avatar_color,
             role: m.role,
+            social_battery: m.user_id.social_battery || 'open',
             daily_statuses: m.user_id.daily_statuses || {}
         }));
 

@@ -167,7 +167,11 @@ export default function SpacePage() {
             // ProposalList will handle its own refresh, but let's trigger it
             window.__refreshProposals?.();
         }
-    }, [fetchEvents]);
+
+        if (type === 'vibe_updated') {
+            fetchSpace();
+        }
+    }, [fetchEvents, fetchSpace]);
 
     useSSE(handleSSEEvent);
 
@@ -440,11 +444,13 @@ export default function SpacePage() {
                                     className={`member-chip${selectedUserIds.includes(m.id) ? ' active' : ''}`}
                                     onClick={() => toggleUserFilter(m.id)}
                                 >
-                                    <span
-                                        className="avatar avatar-sm"
-                                        style={{ background: m.avatar_color, width: 18, height: 18, fontSize: '0.55rem' }}
-                                    >
-                                        {m.nickname?.charAt(0)}
+                                    <span className={`avatar-halo ${m.social_battery || 'open'}`} style={{ display: 'inline-flex', padding: '1px' }}>
+                                        <span
+                                            className="avatar avatar-sm"
+                                            style={{ background: m.avatar_color, width: 18, height: 18, fontSize: '0.55rem', margin: 0 }}
+                                        >
+                                            {m.nickname?.charAt(0)}
+                                        </span>
                                     </span>
                                     {m.nickname}
                                 </button>

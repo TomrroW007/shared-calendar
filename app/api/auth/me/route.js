@@ -21,6 +21,7 @@ export async function GET(request) {
             username: user.username,
             nickname: user.nickname,
             avatar_color: user.avatar_color,
+            social_battery: user.social_battery || 'open',
             ics_urls: user.ics_urls || [],
             daily_statuses: user.daily_statuses || {}
         };

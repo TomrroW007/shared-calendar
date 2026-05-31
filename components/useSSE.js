@@ -74,6 +74,9 @@ export function useSSE(onEvent) {
             spaceChannel.bind('proposal_cancelled', (data) => {
                 onEvent('proposal_cancelled', data);
             });
+            spaceChannel.bind('vibe_updated', (data) => {
+                onEvent('vibe_updated', data);
+            });
         }
 
         pusher.connection.bind('error', (err) => {

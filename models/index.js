@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
     nickname: { type: String, required: true },
     password_hash: { type: String, required: true },
     avatar_color: { type: String, default: '#666' },
+    social_battery: { type: String, enum: ['low', 'open', 'hype'], default: 'open' },
     created_at: { type: Date, default: Date.now },
 
     // Push Notifications (Multiple devices)

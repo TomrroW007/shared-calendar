@@ -16,9 +16,10 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: 'Forbidden: You must be a member of this space' }, { status: 403 });
         }
 
-        // 1. Get all members of the space
-        const members = await SpaceMember.find({ space_id: spaceId }).select('user_id');
-        const memberIds = members.map(m => m.user_id.toString());
+        // 1. Get all members of the space (with user info populated to get social_battery)
+        const members = await SpaceMember.find({ space_id: spaceId }).populate('user_id');
+        const users = members.map(m => m.user_id).filter(Boolean);
+        const memberIds = users.map(u => u._id.toString());
 
         // 2. Define search range: next 7 days
         const today = new Date();
@@ -41,22 +42,49 @@ export async function GET(request, { params }) {
             ]
         }).lean();
 
-        // 4. Calculate free count per date
+        // 4. Calculate free count and energyScore per date
         const recommendations = dates.map(date => {
             const busyUserIds = new Set(
                 events.filter(e => e.start_date <= date && e.end_date >= date)
                       .map(e => e.user_id.toString())
             );
-            const freeCount = memberIds.length - busyUserIds.size;
+            
+            let energyScore = 0;
+            const hypeMembers = [];
+            const openMembers = [];
+            const lowMembers = [];
+
+            for (const user of users) {
+                const uid = user._id.toString();
+                if (!busyUserIds.has(uid)) {
+                    const battery = user.social_battery || 'open';
+                    if (battery === 'hype') {
+                        energyScore += 1.5;
+                        hypeMembers.push(user.nickname);
+                    } else if (battery === 'low') {
+                        energyScore += 0.5;
+                        lowMembers.push(user.nickname);
+                    } else {
+                        energyScore += 1.0;
+                        openMembers.push(user.nickname);
+                    }
+                }
+            }
+
+            const freeCount = users.length - busyUserIds.size;
             return {
                 date,
                 freeCount,
-                totalCount: memberIds.length,
-                ratio: freeCount / memberIds.length
+                totalCount: users.length,
+                energyScore,
+                ratio: energyScore / (users.length || 1),
+                hypeMembers,
+                openMembers,
+                lowMembers
             };
         });
 
-        // 5. Sort by freeRatio descending and return Top 3
+        // 5. Sort by energy score ratio descending and return Top 3
         const top3 = recommendations
             .sort((a, b) => b.ratio - a.ratio || a.date.localeCompare(b.date))
             .slice(0, 3);

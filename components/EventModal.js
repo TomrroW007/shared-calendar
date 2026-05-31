@@ -395,12 +395,22 @@ export default function EventModal({ date, event, events = [], members, currentU
                                 </button>
                                 {recommendations.length > 0 && (
                                     <div className="recommend-list">
-                                        {recommendations.map(r => (
-                                            <div key={r.date} className="recommend-item" onClick={() => { setStartDate(r.date); setEndDate(r.date); }}>
-                                                <span style={{ fontWeight: 700 }}>{r.date.slice(5)}</span>
-                                                <span style={{ marginLeft: '6px', color: 'var(--status-available)' }}>{r.freeCount}/{r.totalCount} 有空</span>
-                                            </div>
-                                        ))}
+                                        {recommendations.map(r => {
+                                            const tooltip = [
+                                                r.hypeMembers?.length > 0 ? `🔥 Hype: ${r.hypeMembers.join(', ')}` : '',
+                                                r.openMembers?.length > 0 ? `☕ Open: ${r.openMembers.join(', ')}` : '',
+                                                r.lowMembers?.length > 0 ? `🔋 Low: ${r.lowMembers.join(', ')}` : ''
+                                            ].filter(Boolean).join(' | ');
+
+                                            return (
+                                                <div key={r.date} className="recommend-item" title={tooltip} onClick={() => { setStartDate(r.date); setEndDate(r.date); }}>
+                                                    <span style={{ fontWeight: 700 }}>{r.date.slice(5)}</span>
+                                                    <span style={{ marginLeft: '6px', color: 'var(--status-available)' }}>{r.freeCount}/{r.totalCount} 有空</span>
+                                                    {r.hypeMembers?.length > 0 && <span style={{ marginLeft: '4px' }}>🔥</span>}
+                                                    {r.lowMembers?.length > 0 && <span style={{ marginLeft: '4px' }}>🔋</span>}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
