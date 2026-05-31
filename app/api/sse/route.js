@@ -1,6 +1,7 @@
 import { addSubscriber, removeSubscriber } from '@/lib/sse';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models';
+import { getTokenFromUrlAndHeaders } from '@/lib/sse-utils';
 
 async function getUserFromToken(token) {
     if (!token) return null;
@@ -11,8 +12,9 @@ async function getUserFromToken(token) {
 
 // GET /api/sse — Server-Sent Events stream
 export async function GET(request) {
-    const url = new URL(request.url);
-    const token = url.searchParams.get('token');
+    const token = getTokenFromUrlAndHeaders(request.url, {
+        authorization: request.headers.get('authorization'),
+    });
     const user = await getUserFromToken(token);
     if (!user) {
         return new Response('Unauthorized', { status: 401 });

@@ -61,3 +61,36 @@
 - [最新 PRD](./prd/) - 查看产品需求
 - [架构决策](./adr/) - 了解技术选型
 - [架构图](./architecture/diagrams/) - 查看系统架构
+
+## 🧭 Current TODO (prioritized)
+
+- **P0 - Fix now**
+  - `app/u/[username]/page.js`: Fix `setData(data)` bug to use fetched result. (Bug causing public booking page to show no data)
+  - `lib/push.js`: Remove duplicate cleanup call for expired subscriptions.
+  - Review SSE auth approach (`app/api/sse/route.js` + `components/useSSE.js`) — avoid sending long-lived tokens in URLs; plan migration to cookie-based auth or fetch-stream fallback.
+
+- **P1 - Security & validation**
+  - Add server-side validation (Zod/Joi) for all POST/PUT endpoints.
+  - Sanitize user-provided markdown/HTML (`SpaceWiki`, `comments`, `memo`, `note`) before storing or rendering.
+  - Add rate limiting for public endpoints (register, join, proposals, comments).
+
+- **P2 - Performance & correctness**
+  - Cache or background-sync external ICS fetches instead of fetching on each request.
+  - Optimize member-count queries to use aggregation instead of N queries.
+  - Centralize `authenticate` helper and standardize API error/response format.
+
+- **P3 - Observability & tests**
+  - Add unit tests for `lib/holidays.js`, `lib/nlp.js`, and API auth helper.
+  - Add integration tests for event create/update/delete, RSVP flow, and proposal lifecycle.
+  - Add CI (GitHub Actions) to run lint + tests on PRs.
+
+If you'd like, I can start implementing the P0 fixes and open a small PR with tests and changelog. Which P0 item should I tackle first?
+
+## ⚙️ Recent Dev Changes (for CI/Integration)
+
+- Removed local `.env.local` from the repository to avoid committing secrets. Use CI/integration env vars for builds.
+- Implemented short-lived SSE tokens to reduce long-lived token exposure: added `lib/sse-token.js` and endpoint `POST /api/sse/token`.
+- Fixed `app/u/[username]/page.js` bug and removed duplicate cleanup in `lib/push.js`.
+- Added unit tests for SSE token helper and push-utils; ran tests locally (all passing).
+
+These changes are ready to be pushed to the repository and validated in your integration environment (CI). The `.env.local` file was removed locally; CI should provide `MONGODB_URI` and other secrets.

@@ -15,63 +15,74 @@ export function useSSE(onEvent) {
             esRef.current.close();
         }
 
-        const es = new EventSource(`/api/sse?token=${token}`);
-        esRef.current = es;
+        // Request a short-lived SSE token from the server to avoid sending long-lived tokens in URLs
+        fetch('/api/sse/token', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+            .then(r => {
+                if (!r.ok) throw new Error('Failed to get SSE token');
+                return r.json();
+            })
+            .then(data => {
+                const es = new EventSource(`/api/sse?token=${data.token}`);
+                esRef.current = es;
 
-        es.addEventListener('connected', () => {
-            console.log('[SSE] Connected');
-        });
+                es.addEventListener('connected', () => {
+                    console.log('[SSE] Connected');
+                });
 
-        es.addEventListener('notification', (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                onEvent('notification', data);
-                // Show browser notification
-                showBrowserNotification(data.title, data.body);
-            } catch { }
-        });
+                es.addEventListener('notification', (e) => {
+                    try {
+                        const d = JSON.parse(e.data);
+                        onEvent('notification', d);
+                        // Show browser notification
+                        showBrowserNotification(d.title, d.body);
+                    } catch { }
+                });
 
-        es.addEventListener('event_created', (e) => {
-            try { onEvent('event_created', JSON.parse(e.data)); } catch { }
-        });
+                es.addEventListener('event_created', (e) => {
+                    try { onEvent('event_created', JSON.parse(e.data)); } catch { }
+                });
 
-        es.addEventListener('event_updated', (e) => {
-            try { onEvent('event_updated', JSON.parse(e.data)); } catch { }
-        });
+                es.addEventListener('event_updated', (e) => {
+                    try { onEvent('event_updated', JSON.parse(e.data)); } catch { }
+                });
 
-        es.addEventListener('event_deleted', (e) => {
-            try { onEvent('event_deleted', JSON.parse(e.data)); } catch { }
-        });
+                es.addEventListener('event_deleted', (e) => {
+                    try { onEvent('event_deleted', JSON.parse(e.data)); } catch { }
+                });
 
-        es.addEventListener('proposal_created', (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                onEvent('proposal_created', data);
-                showBrowserNotification(`📋 新的约活动`, data.proposal?.title);
-            } catch { }
-        });
+                es.addEventListener('proposal_created', (e) => {
+                    try {
+                        const d = JSON.parse(e.data);
+                        onEvent('proposal_created', d);
+                        showBrowserNotification(`📋 新的约活动`, d.proposal?.title);
+                    } catch { }
+                });
 
-        es.addEventListener('proposal_confirmed', (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                onEvent('proposal_confirmed', data);
-                showBrowserNotification('🎉 活动已确认', `「${data.title}」定在 ${data.confirmed_date}`);
-            } catch { }
-        });
+                es.addEventListener('proposal_confirmed', (e) => {
+                    try {
+                        const d = JSON.parse(e.data);
+                        onEvent('proposal_confirmed', d);
+                        showBrowserNotification('🎉 活动已确认', `「${d.title}」定在 ${d.confirmed_date}`);
+                    } catch { }
+                });
 
-        es.addEventListener('proposal_voted', (e) => {
-            try { onEvent('proposal_voted', JSON.parse(e.data)); } catch { }
-        });
+                es.addEventListener('proposal_voted', (e) => {
+                    try { onEvent('proposal_voted', JSON.parse(e.data)); } catch { }
+                });
 
-        es.addEventListener('proposal_cancelled', (e) => {
-            try { onEvent('proposal_cancelled', JSON.parse(e.data)); } catch { }
-        });
+                es.addEventListener('proposal_cancelled', (e) => {
+                    try { onEvent('proposal_cancelled', JSON.parse(e.data)); } catch { }
+                });
 
-        es.onerror = () => {
-            es.close();
-            // Reconnect after 5 seconds
-            reconnectTimeout.current = setTimeout(connect, 5000);
-        };
+                es.onerror = () => {
+                    es.close();
+                    // Reconnect after 5 seconds
+                    reconnectTimeout.current = setTimeout(connect, 5000);
+                };
+            })
+            .catch(err => {
+                console.warn('SSE token request failed', err);
+            });
     }, [onEvent]);
 
     useEffect(() => {
