@@ -107,9 +107,7 @@ export default function EventModal({ date, event, events = [], members, currentU
 
         setLoadingRecommend(true);
         try {
-            const res = await fetch(`/api/spaces/${spaceId}/recommend`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch(`/api/spaces/${spaceId}/recommend`);
             const data = await res.json();
             setRecommendations(data.recommendations || []);
         } catch (e) { console.error(e); }
@@ -158,8 +156,7 @@ export default function EventModal({ date, event, events = [], members, currentU
             await fetch('/api/users/me/status', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ date: startDate, emoji, text })
             });
@@ -186,9 +183,7 @@ export default function EventModal({ date, event, events = [], members, currentU
     const fetchComments = useCallback(async () => {
         if (!event?.id) return;
         try {
-            const res = await fetch(`/api/comments?relatedId=${event.id}`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch(`/api/comments?relatedId=${event.id}`);
             const data = await res.json();
             setComments(data.comments || []);
         } catch (e) { console.error(e); }
@@ -255,8 +250,7 @@ export default function EventModal({ date, event, events = [], members, currentU
             const res = await fetch('/api/comments', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}` 
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ relatedId: event.id, content: newComment.trim() })
             });
@@ -338,8 +332,7 @@ export default function EventModal({ date, event, events = [], members, currentU
         setLoading(true);
         try {
             const res = await fetch(`/api/spaces/${window.location.pathname.split('/').pop()}/events/${event.id}/interest`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+                method: 'POST'
             });
             if (res.ok) {
                 const data = await res.json();
@@ -402,12 +395,22 @@ export default function EventModal({ date, event, events = [], members, currentU
                                 </button>
                                 {recommendations.length > 0 && (
                                     <div className="recommend-list">
-                                        {recommendations.map(r => (
-                                            <div key={r.date} className="recommend-item" onClick={() => { setStartDate(r.date); setEndDate(r.date); }}>
-                                                <span style={{ fontWeight: 700 }}>{r.date.slice(5)}</span>
-                                                <span style={{ marginLeft: '6px', color: 'var(--status-available)' }}>{r.freeCount}/{r.totalCount} 有空</span>
-                                            </div>
-                                        ))}
+                                        {recommendations.map(r => {
+                                            const tooltip = [
+                                                r.hypeMembers?.length > 0 ? `🔥 Hype: ${r.hypeMembers.join(', ')}` : '',
+                                                r.openMembers?.length > 0 ? `☕ Open: ${r.openMembers.join(', ')}` : '',
+                                                r.lowMembers?.length > 0 ? `🔋 Low: ${r.lowMembers.join(', ')}` : ''
+                                            ].filter(Boolean).join(' | ');
+
+                                            return (
+                                                <div key={r.date} className="recommend-item" title={tooltip} onClick={() => { setStartDate(r.date); setEndDate(r.date); }}>
+                                                    <span style={{ fontWeight: 700 }}>{r.date.slice(5)}</span>
+                                                    <span style={{ marginLeft: '6px', color: 'var(--status-available)' }}>{r.freeCount}/{r.totalCount} 有空</span>
+                                                    {r.hypeMembers?.length > 0 && <span style={{ marginLeft: '4px' }}>🔥</span>}
+                                                    {r.lowMembers?.length > 0 && <span style={{ marginLeft: '4px' }}>🔋</span>}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

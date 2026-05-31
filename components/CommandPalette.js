@@ -31,9 +31,7 @@ export default function CommandPalette() {
         }
         setLoading(true);
         try {
-            const res = await fetch('/api/spaces', {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch('/api/spaces');
             const data = await res.json();
             const filtered = (data.spaces || []).filter(s => 
                 s.name.toLowerCase().includes(query.toLowerCase())

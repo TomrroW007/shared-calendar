@@ -26,60 +26,84 @@ export default function HomePage() {
         return () => window.removeEventListener('open-create-space', handleOpenCreate);
     }, []);
 
-    const getToken = () => localStorage.getItem('token');
-
-    const handleLogout = () => {
-        if (!confirm('确定要退出登录吗？\n退出前请确保已保存好你的访问令牌。')) return;
+    const handleLogout = async () => {
+        if (!confirm('确定要退出登录吗？')) return;
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (e) {
+            console.error('Logout failed', e);
+        }
         localStorage.clear();
         router.push('/login');
     };
 
     const handleCopyToken = () => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            navigator.clipboard.writeText(token);
-            showToast('令牌已复制到剪贴板');
+        // Since token is HttpOnly, we don't have token access via JavaScript.
+        // We'll show a fallback message or their Username.
+        if (user && user.username) {
+            navigator.clipboard.writeText(user.username);
+            showToast('用户名已复制');
         }
     };
 
-    const fetchSpaces = useCallback(async (token) => {
+    const fetchSpaces = useCallback(async () => {
         try {
-            const currentToken = token || getToken();
-            const [spacesRes, todayRes] = await Promise.all([
-                fetch('/api/spaces', { headers: { Authorization: `Bearer ${currentToken}` } }),
-                fetch('/api/events/today', { headers: { Authorization: `Bearer ${currentToken}` } })
+            const [spacesRes, todayRes, meRes] = await Promise.all([
+                fetch('/api/spaces'),
+                fetch('/api/events/today'),
+                fetch('/api/auth/me')
             ]);
             
-            if (spacesRes.status === 401) {
+            if (spacesRes.status === 401 || meRes.status === 401) {
                 router.push('/login');
                 return;
             }
+            
             const spacesData = await spacesRes.json();
             const todayData = await todayRes.json();
+            const meData = await meRes.json();
             
             setSpaces(spacesData.spaces || []);
             setTodayEvents(todayData.events || []);
-        } catch {
-            // ignore
+            if (meData.user) {
+                setUser(meData.user);
+                localStorage.setItem('user', JSON.stringify(meData.user));
+            }
+        } catch (err) {
+            console.error('Fetch dashboard error:', err);
         } finally {
             setLoading(false);
         }
     }, [router]);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
         const savedUser = localStorage.getItem('user');
         if (savedUser) setUser(JSON.parse(savedUser));
-        fetchSpaces(token);
-    }, [router, fetchSpaces]);
+        fetchSpaces();
+    }, [fetchSpaces]);
 
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(''), 2500);
+    };
+
+    const handleUpdateVibe = async (vibe) => {
+        if (!user) return;
+        const updatedUser = { ...user, social_battery: vibe };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        try {
+            const res = await fetch('/api/users/me/social-battery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ social_battery: vibe }),
+            });
+            if (!res.ok) throw new Error();
+        } catch (err) {
+            showToast('更新状态失败');
+            fetchSpaces();
+        }
     };
 
     const handleCreateSpace = async (e) => {
@@ -91,7 +115,6 @@ export default function HomePage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${getToken()}`,
                 },
                 body: JSON.stringify({ name: newSpaceName.trim() }),
             });
@@ -117,7 +140,6 @@ export default function HomePage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${getToken()}`,
                 },
                 body: JSON.stringify({ invite_code: inviteCode.trim() }),
             });
@@ -155,11 +177,47 @@ export default function HomePage() {
                         {user && <p className="subtitle">Hi, {user.nickname} 👋</p>}
                     </div>
                     {user && (
-                        <div className="avatar" style={{ background: user.avatar_color, cursor: 'pointer' }} onClick={() => setShowAccount(true)}>
-                            {user.nickname?.charAt(0)}
+                        <div className={`avatar-halo ${user.social_battery || 'open'}`}>
+                            <div className="avatar" style={{ background: user.avatar_color, cursor: 'pointer', margin: 0 }} onClick={() => setShowAccount(true)}>
+                                {user.nickname?.charAt(0)}
+                            </div>
                         </div>
                     )}
                 </div>
+
+                {/* Vibe Slider (Social Battery) */}
+                {user && (
+                    <div className="vibe-slider-container">
+                        <div className="vibe-slider-title">
+                            <span>🔋 社交电池 (Social Battery)</span>
+                            <span className="vibe-slider-desc">
+                                {user.social_battery === 'low' && '仅限紧急 (Low Battery)'}
+                                {user.social_battery === 'open' && '开放闲聊 (Open)'}
+                                {user.social_battery === 'hype' && '来嗨！(Hype 🔥)'}
+                            </span>
+                        </div>
+                        <div className="vibe-slider-track">
+                            <div 
+                                className={`vibe-slider-item${user.social_battery === 'low' ? ' active low' : ''}`}
+                                onClick={() => handleUpdateVibe('low')}
+                            >
+                                🔋 Low
+                            </div>
+                            <div 
+                                className={`vibe-slider-item${user.social_battery === 'open' ? ' active open' : ''}`}
+                                onClick={() => handleUpdateVibe('open')}
+                            >
+                                ☕ Open
+                            </div>
+                            <div 
+                                className={`vibe-slider-item${user.social_battery === 'hype' ? ' active hype' : ''}`}
+                                onClick={() => handleUpdateVibe('hype')}
+                            >
+                                🔥 Hype
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Dashboard: Today Overview */}
                 {todayEvents.length > 0 && (
@@ -230,15 +288,15 @@ export default function HomePage() {
                         </div>
 
                         <div className="token-display">
-                            <span className="token-label">访问令牌 (Access Token)</span>
-                            <span className="token-value">{localStorage.getItem('token')}</span>
+                            <span className="token-label">用户名 (Username)</span>
+                            <span className="token-value">{user?.username}</span>
                             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                                ⚠️ 这是你进入账户的唯一凭证，请妥善保存。你可以在其他设备上使用此令牌登录。
+                                这是你在共享日历中登录账户的唯一用户名。
                             </p>
                         </div>
 
                         <button className="btn btn-secondary btn-full" onClick={handleCopyToken} style={{ marginBottom: '12px' }}>
-                            📋 复制令牌
+                            📋 复制用户名
                         </button>
                         <button className="btn btn-danger btn-full" onClick={handleLogout}>
                             🚪 退出登录

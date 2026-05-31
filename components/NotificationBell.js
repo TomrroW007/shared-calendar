@@ -7,13 +7,11 @@ export default function NotificationBell({ onItemClick }) {
     const [unreadCount, setUnreadCount] = useState(0);
     const [showPanel, setShowPanel] = useState(false);
 
-    const getToken = () => localStorage.getItem('token');
+
 
     const fetchNotifications = useCallback(async () => {
         try {
-            const res = await fetch('/api/notifications', {
-                headers: { Authorization: `Bearer ${getToken()}` },
-            });
+            const res = await fetch('/api/notifications');
             const data = await res.json();
             setNotifications(data.notifications || []);
             setUnreadCount(data.unread_count || 0);
@@ -57,7 +55,6 @@ export default function NotificationBell({ onItemClick }) {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${getToken()}`,
                 },
                 body: JSON.stringify({ ids: 'all' }),
             });
@@ -77,7 +74,7 @@ export default function NotificationBell({ onItemClick }) {
             // Fire API call asynchronously
             fetch('/api/notifications', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: [n.id] }),
             }).catch(() => { });
         }

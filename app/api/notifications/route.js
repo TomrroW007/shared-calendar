@@ -3,12 +3,10 @@ import dbConnect from '@/lib/mongodb';
 import { User, Notification } from '@/models';
 
 async function authenticate(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return null;
-    const token = authHeader.split(' ')[1];
-    if (!token) return null;
+    const userId = request.headers.get('x-user-id');
+    if (!userId) return null;
     await dbConnect();
-    return User.findOne({ token });
+    return User.findById(userId);
 }
 
 export async function GET(request) {
@@ -34,6 +32,7 @@ export async function GET(request) {
             read: n.read,
             created_at: n.created_at,
             related_id: n.related_id,
+            space_id: n.space_id?.toString() || n.space_id,
             from_nickname: n.from_user_id?.nickname,
             from_avatar_color: n.from_user_id?.avatar_color,
             action_needed: n.type === 'invitation' || n.type === 'proposal_vote' // logic?

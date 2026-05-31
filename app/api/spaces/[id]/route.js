@@ -2,28 +2,18 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Space, SpaceMember, User } from '@/models';
 
-async function authenticate(request) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return null;
-    const token = authHeader.split(' ')[1];
-    if (!token) return null;
-    await dbConnect();
-    return User.findOne({ token });
-}
-
 export async function GET(request, { params }) {
     try {
         const { id } = await params;
+        const userId = request.headers.get('x-user-id');
+        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         await dbConnect();
-        const user = await authenticate(request);
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
         const space = await Space.findById(id);
         if (!space) return NextResponse.json({ error: 'Space not found' }, { status: 404 });
 
         // Check membership
-        const membership = await SpaceMember.findOne({ space_id: id, user_id: user._id });
+        const membership = await SpaceMember.findOne({ space_id: id, user_id: userId });
         if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
         // Get members
@@ -33,6 +23,7 @@ export async function GET(request, { params }) {
             nickname: m.user_id.nickname,
             avatar_color: m.user_id.avatar_color,
             role: m.role,
+            social_battery: m.user_id.social_battery || 'open',
             daily_statuses: m.user_id.daily_statuses || {}
         }));
 
@@ -55,26 +46,24 @@ export async function POST(request, { params }) {
     // Join space
     try {
         const { id } = await params;
-        await dbConnect();
-        const user = await authenticate(request);
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const userId = request.headers.get('x-user-id');
+        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+        await dbConnect();
         const space = await Space.findById(id);
         if (!space) return NextResponse.json({ error: 'Space not found' }, { status: 404 });
 
         // Check if already member
-        const exists = await SpaceMember.findOne({ space_id: id, user_id: user._id });
+        const exists = await SpaceMember.findOne({ space_id: id, user_id: userId });
         if (exists) {
             return NextResponse.json({ message: 'Already a member' });
         }
 
         await SpaceMember.create({
             space_id: id,
-            user_id: user._id,
+            user_id: userId,
             role: 'editor'
         });
-
-        // Notify others? (Optional, kept simple for now)
 
         return NextResponse.json({ message: 'Joined successfully' });
     } catch (error) {
@@ -86,12 +75,13 @@ export async function DELETE(request, { params }) {
     // Leave space
     try {
         const { id: spaceId } = await params;
+        const userId = request.headers.get('x-user-id');
+        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         await dbConnect();
-        const user = await authenticate(request);
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Remove membership
-        const result = await SpaceMember.deleteOne({ space_id: spaceId, user_id: user._id });
+        const result = await SpaceMember.deleteOne({ space_id: spaceId, user_id: userId });
         
         if (result.deletedCount === 0) {
             return NextResponse.json({ error: 'Not a member' }, { status: 404 });
@@ -107,12 +97,13 @@ export async function DELETE(request, { params }) {
 export async function PUT(request, { params }) {
     try {
         const { id } = await params;
+        const userId = request.headers.get('x-user-id');
+        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         await dbConnect();
-        const user = await authenticate(request);
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Check if user is owner or admin
-        const member = await SpaceMember.findOne({ space_id: id, user_id: user._id });
+        const member = await SpaceMember.findOne({ space_id: id, user_id: userId });
         if (!member || !['owner', 'admin'].includes(member.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

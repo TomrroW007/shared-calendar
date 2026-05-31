@@ -69,21 +69,17 @@ export default function PushManager() {
     }
 
     async function sendSubscription(subscription) {
-        const token = localStorage.getItem('token'); // Assuming cleanup hasn't removed this logic?
-        // Wait, authentication logic on frontend:
-        // My layout usually handles auth context.
-        // If I don't have token, I can't subscribe.
-        // Let's assume user is logged in if they see this.
-        if (!token) return;
-
-        await fetch('/api/push/subscribe', {
-            method: 'POST',
-            body: JSON.stringify(subscription),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        try {
+            await fetch('/api/push/subscribe', {
+                method: 'POST',
+                body: JSON.stringify(subscription),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+        } catch (e) {
+            console.error('Failed to sync push subscription', e);
+        }
     }
 
     if (permission === 'denied') {

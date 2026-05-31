@@ -1,84 +1,96 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
+import Pusher from 'pusher-js';
+import { useParams } from 'next/navigation';
 
 export function useSSE(onEvent) {
-    const esRef = useRef(null);
-    const reconnectTimeout = useRef(null);
+    const pusherRef = useRef(null);
+    const params = useParams();
+    const spaceId = params?.id;
 
     const connect = useCallback(() => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-
-        // Close existing connection
-        if (esRef.current) {
-            esRef.current.close();
+        const savedUser = localStorage.getItem('user');
+        if (!savedUser) return;
+        
+        let user;
+        try {
+            user = JSON.parse(savedUser);
+        } catch (e) {
+            console.error('Failed to parse user details', e);
+            return;
         }
 
-        const es = new EventSource(`/api/sse?token=${token}`);
-        esRef.current = es;
+        const userId = user.id;
+        const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
+        const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1';
 
-        es.addEventListener('connected', () => {
-            console.log('[SSE] Connected');
+        if (!pusherKey) {
+            console.warn('[Pusher] Missing NEXT_PUBLIC_PUSHER_KEY environment variable. Real-time updates disabled.');
+            return;
+        }
+
+        // Initialize Pusher Client SDK
+        const pusher = new Pusher(pusherKey, {
+            cluster: pusherCluster,
+            forceTLS: true,
+            authEndpoint: '/api/pusher/auth', // Routes private channel verification
+        });
+        pusherRef.current = pusher;
+
+        // 1. Subscribe to User Channel (for push notifications)
+        const userChannel = pusher.subscribe(`private-user-${userId}`);
+        
+        userChannel.bind('notification', (data) => {
+            onEvent('notification', data);
+            showBrowserNotification(data.title, data.body);
         });
 
-        es.addEventListener('notification', (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                onEvent('notification', data);
-                // Show browser notification
-                showBrowserNotification(data.title, data.body);
-            } catch { }
-        });
-
-        es.addEventListener('event_created', (e) => {
-            try { onEvent('event_created', JSON.parse(e.data)); } catch { }
-        });
-
-        es.addEventListener('event_updated', (e) => {
-            try { onEvent('event_updated', JSON.parse(e.data)); } catch { }
-        });
-
-        es.addEventListener('event_deleted', (e) => {
-            try { onEvent('event_deleted', JSON.parse(e.data)); } catch { }
-        });
-
-        es.addEventListener('proposal_created', (e) => {
-            try {
-                const data = JSON.parse(e.data);
+        // 2. Subscribe to Space Channel (if active context)
+        let spaceChannel = null;
+        if (spaceId) {
+            spaceChannel = pusher.subscribe(`private-space-${spaceId}`);
+            
+            spaceChannel.bind('event_created', (data) => {
+                onEvent('event_created', data);
+            });
+            spaceChannel.bind('event_updated', (data) => {
+                onEvent('event_updated', data);
+            });
+            spaceChannel.bind('event_deleted', (data) => {
+                onEvent('event_deleted', data);
+            });
+            spaceChannel.bind('proposal_created', (data) => {
                 onEvent('proposal_created', data);
-                showBrowserNotification(`📋 新的约活动`, data.proposal?.title);
-            } catch { }
-        });
-
-        es.addEventListener('proposal_confirmed', (e) => {
-            try {
-                const data = JSON.parse(e.data);
+                showBrowserNotification('📋 新的约活动', data.proposal?.title);
+            });
+            spaceChannel.bind('proposal_confirmed', (data) => {
                 onEvent('proposal_confirmed', data);
                 showBrowserNotification('🎉 活动已确认', `「${data.title}」定在 ${data.confirmed_date}`);
-            } catch { }
+            });
+            spaceChannel.bind('proposal_voted', (data) => {
+                onEvent('proposal_voted', data);
+            });
+            spaceChannel.bind('proposal_cancelled', (data) => {
+                onEvent('proposal_cancelled', data);
+            });
+            spaceChannel.bind('vibe_updated', (data) => {
+                onEvent('vibe_updated', data);
+            });
+        }
+
+        pusher.connection.bind('error', (err) => {
+            console.error('[Pusher] Connection error:', err);
         });
 
-        es.addEventListener('proposal_voted', (e) => {
-            try { onEvent('proposal_voted', JSON.parse(e.data)); } catch { }
-        });
-
-        es.addEventListener('proposal_cancelled', (e) => {
-            try { onEvent('proposal_cancelled', JSON.parse(e.data)); } catch { }
-        });
-
-        es.onerror = () => {
-            es.close();
-            // Reconnect after 5 seconds
-            reconnectTimeout.current = setTimeout(connect, 5000);
-        };
-    }, [onEvent]);
+    }, [onEvent, spaceId]);
 
     useEffect(() => {
         connect();
         return () => {
-            if (esRef.current) esRef.current.close();
-            if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
+            if (pusherRef.current) {
+                pusherRef.current.disconnect();
+            }
         };
     }, [connect]);
 }

@@ -12,9 +12,7 @@ export default function SpaceWiki({ spaceId, onClose }) {
     const fetchNotes = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/spaces/${spaceId}/notes`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch(`/api/spaces/${spaceId}/notes`);
             const data = await res.json();
             setNotes(data.notes || []);
         } catch (e) { console.error(e); }
@@ -31,8 +29,7 @@ export default function SpaceWiki({ spaceId, onClose }) {
             const res = await fetch(`/api/spaces/${spaceId}/notes`, {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 
                     title, 

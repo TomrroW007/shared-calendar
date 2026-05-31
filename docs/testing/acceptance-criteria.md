@@ -10,15 +10,16 @@
 
 ---
 
-## AC-001 匿名注册与持久化
+## AC-001 用户注册、安全登录与会话持久化
 
 Given 用户首次打开应用
 
-When 用户设置昵称并进入应用
+When 用户输入唯一的用户名、安全密码及昵称进行注册并登录
 
-Then 系统生成 token 并持久化
+Then 系统使用 bcryptjs 进行密码哈希存储，并生成 JWT Session Token 写入安全 `HttpOnly` Cookie
 
-And 重新打开页面后仍保持登录态
+And 用户重新打开页面或进行 API 请求时，Next.js Edge Middleware 自动拦截验证
+    JWT Cookie 并保持登录态，免疫 XSS 攻击
 
 ## AC-002 Space 创建与邀请码加入
 
@@ -58,14 +59,14 @@ Then 所有成员收到通知中心记录
 
 And 日历中显示最终安排（按产品定义）
 
-## AC-005 SSE 准实时刷新与通知中心
+## AC-005 Pusher WebSockets 实时同步与通知中心
 
 Given 用户 A 与 B 同时打开同一 space
 
-And 双方已订阅 SSE
+And 双方均通过 `/api/pusher/auth` 安全鉴权并订阅 Pusher WebSockets 私有通道
 
-When A 创建事件/更新状态/确认提案日期
+When A 创建事件、更新状态或确认提案日期
 
-Then B 的页面在短时间内自动刷新到最新状态
+Then Pusher 实时网关向订阅的私有通道广播对应事件
 
-And 通知中心产生相应记录
+And B 的客户端页面即时响应并刷新到最新状态，且通知中心产生相应记录

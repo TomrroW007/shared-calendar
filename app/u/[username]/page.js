@@ -15,8 +15,7 @@ export default function PublicBookingPage() {
         fetch(`/api/users/${username}`)
             .then(res => res.json())
             .then(d => {
-                setData(data);
-                if (d.user) setData(d);
+                setData(d);
             })
             .finally(() => setLoading(false));
     }, [username]);
@@ -52,7 +51,7 @@ export default function PublicBookingPage() {
                             <label>想约什么？</label>
                             <textarea className="input" placeholder="简单说明事由..." value={requestNote} onChange={e => setRequestNote(e.target.value)} required />
                         </div>
-                        
+
                         <div style={{ marginBottom: '16px' }}>
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>对方的忙碌日期参考：</label>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>

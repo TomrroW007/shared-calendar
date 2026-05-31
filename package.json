@@ -7,13 +7,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:holidays": "node lib/test-holidays.js"
+    "test:holidays": "node lib/test-holidays.js",
+    "test": "node --test"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.4",
+    "jose": "^6.2.3",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.0",
     "next": "^15.1.0",
     "node-ical": "^0.25.1",
+    "pusher": "^5.3.3",
+    "pusher-js": "^8.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "uuid": "^11.0.0",

@@ -8,7 +8,6 @@ export default function BottomNav() {
 
     const navItems = [
         { label: '首页', icon: '🏠', path: '/' },
-        { label: '空间', icon: '👥', path: '/space', activeCheck: (p) => p.startsWith('/space') },
         { label: '通知', icon: '🔔', path: '/notifications', badge: 0 },
         { label: '账户', icon: '👤', path: '/account', activeCheck: (p) => p === '/account' },
     ];
