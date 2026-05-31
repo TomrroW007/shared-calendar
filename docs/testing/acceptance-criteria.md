@@ -18,7 +18,8 @@ When 用户输入唯一的用户名、安全密码及昵称进行注册并登录
 
 Then 系统使用 bcryptjs 进行密码哈希存储，并生成 JWT Session Token 写入安全 `HttpOnly` Cookie
 
-And 用户重新打开页面或进行 API 请求时，Next.js Edge Middleware 自动拦截验证 JWT Cookie 并保持登录态，免疫 XSS 攻击
+And 用户重新打开页面或进行 API 请求时，Next.js Edge Middleware 自动拦截验证
+    JWT Cookie 并保持登录态，免疫 XSS 攻击
 
 ## AC-002 Space 创建与邀请码加入
 
