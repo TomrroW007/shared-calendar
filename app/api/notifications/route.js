@@ -32,6 +32,7 @@ export async function GET(request) {
             read: n.read,
             created_at: n.created_at,
             related_id: n.related_id,
+            space_id: n.space_id?.toString() || n.space_id,
             from_nickname: n.from_user_id?.nickname,
             from_avatar_color: n.from_user_id?.avatar_color,
             action_needed: n.type === 'invitation' || n.type === 'proposal_vote' // logic?
