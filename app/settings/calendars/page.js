@@ -1,122 +1,217 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function CalendarsPage() {
     const [calendars, setCalendars] = useState([]);
     const [newUrl, setNewUrl] = useState('');
     const [newName, setNewName] = useState('');
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [toast, setToast] = useState('');
+    const router = useRouter();
+
+    const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(''), 2500);
+    };
+
+    const fetchCalendars = useCallback(async () => {
+        try {
+            const res = await fetch('/api/users/me/calendars');
+            if (res.status === 401) {
+                router.push('/login');
+                return;
+            }
+            if (res.ok) {
+                const data = await res.json();
+                setCalendars(data.calendars || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch calendars:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [router]);
 
     useEffect(() => {
         fetchCalendars();
-    }, []);
-
-    const fetchCalendars = async () => {
-        const res = await fetch('/api/users/me/calendars');
-        if (res.ok) {
-            const data = await res.json();
-            setCalendars(data.calendars);
-        }
-        setLoading(false);
-    };
+    }, [fetchCalendars]);
 
     const handleAdd = async (e) => {
         e.preventDefault();
-        const res = await fetch('/api/users/me/calendars', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ url: newUrl, name: newName })
-        });
-        if (res.ok) {
-            setNewUrl('');
-            setNewName('');
-            fetchCalendars();
-        } else {
-            alert('Failed to add calendar');
+        if (!newUrl.trim() || !newName.trim()) return;
+        setActionLoading(true);
+        try {
+            const res = await fetch('/api/users/me/calendars', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: newUrl.trim(), name: newName.trim() })
+            });
+            if (res.ok) {
+                setNewUrl('');
+                setNewName('');
+                showToast('外部日历同步成功');
+                fetchCalendars();
+            } else {
+                const data = await res.json();
+                showToast(data.error || '添加失败，请检查URL格式');
+            }
+        } catch {
+            showToast('添加失败');
+        } finally {
+            setActionLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Remove this calendar?')) return;
-        const res = await fetch(`/api/users/me/calendars?id=${id}`, {
-            method: 'DELETE',
-        });
-        if (res.ok) {
-            fetchCalendars();
+        if (!confirm('确定要移除此外部日历吗？\n移除后，该日历关联的所有忙碌时段将不再同步展示给朋友。')) return;
+        try {
+            const res = await fetch(`/api/users/me/calendars?id=${id}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                showToast('已移除日历');
+                fetchCalendars();
+            } else {
+                showToast('移除失败');
+            }
+        } catch {
+            showToast('移除失败');
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900">
-            <div className="max-w-2xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">External Calendars</h1>
-                    <Link href="/" className="text-blue-600 hover:underline">Back to Dashboard</Link>
+        <div className="page">
+            <div className="container">
+                {/* Header */}
+                <div className="page-header">
+                    <Link href="/account" className="back-btn">←</Link>
+                    <div>
+                        <h1>同步外部日历</h1>
+                        <p className="subtitle">导入您的 Apple/Google/Microsoft ICS 链接</p>
+                    </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg shadow mb-8">
-                    <h2 className="text-lg font-semibold mb-4">Add Calendar (ICS)</h2>
-                    <form onSubmit={handleAdd} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Calendar Name</label>
+                {/* Add Calendar Form Card */}
+                <div className="card" style={{ marginBottom: '20px' }}>
+                    <h3 className="section-title" style={{ marginTop: 0, marginBottom: '16px', fontSize: '0.95rem' }}>
+                        🔗 导入新日历 (ICS URL)
+                    </h3>
+                    
+                    <form onSubmit={handleAdd}>
+                        <div className="input-group">
+                            <label>日历名称</label>
                             <input
+                                className="input"
                                 type="text"
                                 value={newName}
                                 onChange={e => setNewName(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                                placeholder="e.g. Work Calendar"
+                                placeholder="例如：工作安排、iCloud 个人"
+                                maxLength={30}
                                 required
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">ICS URL</label>
+                        <div className="input-group">
+                            <label>ICS 订阅链接</label>
                             <input
+                                className="input"
                                 type="url"
                                 value={newUrl}
                                 onChange={e => setNewUrl(e.target.value)}
-                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                                 placeholder="https://calendar.google.com/..."
                                 required
                             />
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: '1.4' }}>
+                                请填写公共或私人的 ICS 格式日历订阅链接。导入后，系统仅提取您的忙碌时间并对好友匿名展示，不会公开您的日程详情。
+                            </p>
                         </div>
+                        
                         <button
                             type="submit"
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                            className="btn btn-primary btn-full"
+                            disabled={actionLoading || !newUrl.trim() || !newName.trim()}
                         >
-                            Add Calendar
+                            {actionLoading ? '同步中...' : '开始导入并同步'}
                         </button>
                     </form>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-lg font-semibold mb-4">Your Calendars</h2>
+                {/* Calendars List Card */}
+                <div className="card">
+                    <h3 className="section-title" style={{ marginTop: 0, marginBottom: '16px', fontSize: '0.95rem' }}>
+                        📅 已同步的外部日历
+                    </h3>
+
                     {loading ? (
-                        <p>Loading...</p>
+                        <div className="loading-center" style={{ padding: '20px 0' }}>
+                            <div className="spinner" />
+                        </div>
                     ) : calendars.length === 0 ? (
-                        <p className="text-gray-500">No external calendars connected.</p>
+                        <div className="empty-state" style={{ padding: '24px 0' }}>
+                            <div className="emoji" style={{ fontSize: '2rem', marginBottom: '8px' }}>🏖️</div>
+                            <p style={{ fontSize: '0.8rem' }}>尚未连接任何外部日历<br />连接后会自动同步并在空闲分析中占位</p>
+                        </div>
                     ) : (
-                        <ul className="divide-y divide-gray-200">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {calendars.map(cal => (
-                                <li key={cal._id} className="py-4 flex justify-between items-center">
-                                    <div>
-                                        <p className="font-medium">{cal.name}</p>
-                                        <p className="text-xs text-gray-500 truncate max-w-xs">{cal.url}</p>
+                                <div
+                                    key={cal._id}
+                                    className="event-item"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        padding: '12px 14px',
+                                        background: 'var(--bg-glass)',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: 'var(--radius-md)'
+                                    }}
+                                >
+                                    <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>📅</span>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                                            {cal.name}
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: '0.7rem',
+                                                color: 'var(--text-muted)',
+                                                marginTop: '2px',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}
+                                            title={cal.url}
+                                        >
+                                            {cal.url}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => handleDelete(cal._id)}
-                                        className="text-red-600 hover:text-red-900 text-sm"
+                                        className="btn btn-danger btn-sm"
+                                        style={{
+                                            padding: '4px 10px',
+                                            fontSize: '0.75rem',
+                                            borderRadius: '6px',
+                                            flexShrink: 0
+                                        }}
                                     >
-                                        Remove
+                                        移除
                                     </button>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     )}
                 </div>
             </div>
+
+            {/* Toast */}
+            {toast && <div className="toast">{toast}</div>}
         </div>
     );
 }
